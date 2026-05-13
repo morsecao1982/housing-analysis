@@ -8,6 +8,7 @@ import { fetchMarketData } from "@/lib/fetchMarketData";
 import { fetchMaterials } from "@/lib/fetchMaterials";
 import { fetchMortgageRates } from "@/lib/fetchMortgageRates";
 import { fetchListings, deriveNewConstructionPrices } from "@/lib/fetchListings";
+import { fetchRealListings } from "@/lib/fetchRealListings";
 
 async function fetchAll() {
   const [neighborhoods, matsResult, rates] = await Promise.all([
@@ -18,7 +19,15 @@ async function fetchAll() {
 
   // Derive sale price estimates from live Zillow top-tier ZHVI ÷ typical new build sqft
   const newConstructionPrices = deriveNewConstructionPrices(neighborhoods);
-  const { listings, dataNote } = fetchListings(matsResult.materialCostMultiplier, newConstructionPrices);
+
+  // Fetch real Zillow listings; fall back to sample data if API fails
+  let listings, dataNote;
+  try {
+    ({ listings, dataNote } = await fetchRealListings(newConstructionPrices, matsResult.materialCostMultiplier));
+    if (listings.length === 0) throw new Error("no listings returned");
+  } catch {
+    ({ listings, dataNote } = fetchListings(matsResult.materialCostMultiplier, newConstructionPrices));
+  }
 
   return {
     neighborhoods,

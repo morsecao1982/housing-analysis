@@ -209,11 +209,11 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-slate-400 text-xs">{l.neighborhood} · ZIP {l.zip}</span>
                         <a
-                          href={`https://www.zillow.com/homes/${`${l.address} ${l.neighborhood} VA ${l.zip}`.replace(/,/g, "").replace(/\s+/g, "-")}_rb/`}
+                          href={l.detailUrl ?? `https://www.zillow.com/homes/${`${l.address} ${l.neighborhood} VA ${l.zip}`.replace(/,/g, "").replace(/\s+/g, "-")}_rb/`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          title={`Search ${l.address} on Zillow`}
+                          title={`View ${l.address} on Zillow`}
                           className="text-xs px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
                         >
                           Zillow ↗

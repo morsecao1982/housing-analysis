@@ -61,6 +61,7 @@ export interface PropertyListing {
   profit: number;
   roi: number;
   newConstructionPricePerSqft: number;
+  detailUrl?: string;
 }
 
 export interface MarketData {
