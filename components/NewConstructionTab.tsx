@@ -17,6 +17,7 @@ interface Props {
   neighborhoods: NeighborhoodData[];
   materialMultiplier: number;
   newConstructionPrices: Record<string, number>;
+  sampleCounts: Record<string, number>;
 }
 
 const ALL_IN_BUILD_COST_SQFT = 420; // premium all-in per sqft
@@ -29,7 +30,7 @@ function pct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 }
 
-export default function NewConstructionTab({ neighborhoods, materialMultiplier, newConstructionPrices }: Props) {
+export default function NewConstructionTab({ neighborhoods, materialMultiplier, newConstructionPrices, sampleCounts }: Props) {
   const rows = neighborhoods.map((n) => {
     // Use live Zillow-derived price if available, fall back to constants
     const newSalePriceSqft = newConstructionPrices[n.name] ?? NEW_CONSTRUCTION_PRICE_SQFT[n.name] ?? 450;
@@ -93,7 +94,7 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier, 
           <div className="text-2xl font-bold text-blue-600">
             <InfoTooltip
               isLive
-              content={`Derived from live Zillow top-tier ZHVI data.\n\nFormula: Top-tier home value ÷ typical new build sqft\n\nPer neighborhood:\n${rows.map(r => `• ${r.name}: $${r.newSalePriceSqft}/sf`).join('\n')}\n\nSource: Zillow top-tier ZHVI (upper 33% of homes by value) ÷ typical new build sqft for each area.\n\nUpdates daily with Zillow data.`}
+              content={`Median sold price/sqft from single-family homes built in the last 2 years.\n\nPer neighborhood:\n${rows.map(r => `• ${r.name}: $${r.newSalePriceSqft}/sf (${sampleCounts[r.name] ?? 0} sold comps)`).join('\n')}\n\nSource: Realtor.com recently sold listings · Updated weekly.`}
             >
               ${Math.round(rows.reduce((s, r) => s + r.newSalePriceSqft, 0) / rows.length)}/sf
             </InfoTooltip>
@@ -327,7 +328,7 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier, 
                     <td className="px-4 py-3 text-slate-700 text-sm tabular-nums">
                       <InfoTooltip
                         isLive
-                        content={`Derived from live Zillow data for ${r.name}.\n\nFormula:\nTop-tier ZHVI ($${Math.round((neighborhoods.find(n=>n.name===r.name)?.newConstructionValue??0)/1000)}K) ÷ ${(TYPICAL_NEW_BUILD_SQFT[r.name]??4000).toLocaleString()} sqft = $${r.newSalePriceSqft}/sf\n\nTop-tier ZHVI = Zillow's estimated value for the upper 33% of homes in this zip code — the closest public proxy for new construction pricing.\n\nUpdates daily with Zillow data.`}
+                        content={`Median $/sqft from ${sampleCounts[r.name] ?? 0} single-family homes built in the last 2 years sold in ${r.name}.\n\nSource: Realtor.com sold listings via RapidAPI.\n${(sampleCounts[r.name] ?? 0) < 3 ? "⚠ Fewer than 3 comps — using fallback estimate." : "Statistically reliable."}\n\nUpdates weekly.`}
                         width="w-72"
                       >
                         ${r.newSalePriceSqft}/sf

@@ -9,6 +9,7 @@ interface Props {
   neighborhoods: NeighborhoodData[];
   materialMultiplier: number;
   newConstructionPrices: Record<string, number>;
+  sampleCounts: Record<string, number>;
 }
 
 const TABS = [
@@ -16,7 +17,7 @@ const TABS = [
   { id: "new_construction", label: "New Construction", desc: "Custom build pricing · Cost vs. sale analysis · DC Metro adjusted" },
 ];
 
-export default function MarketTabs({ neighborhoods, materialMultiplier, newConstructionPrices }: Props) {
+export default function MarketTabs({ neighborhoods, materialMultiplier, newConstructionPrices, sampleCounts }: Props) {
   const [active, setActive] = useState("overall");
   const tab = TABS.find((t) => t.id === active)!;
 
@@ -48,7 +49,7 @@ export default function MarketTabs({ neighborhoods, materialMultiplier, newConst
       {/* Tab content */}
       {active === "overall" && <NeighborhoodGrid neighborhoods={neighborhoods} />}
       {active === "new_construction" && (
-        <NewConstructionTab neighborhoods={neighborhoods} materialMultiplier={materialMultiplier} newConstructionPrices={newConstructionPrices} />
+        <NewConstructionTab neighborhoods={neighborhoods} materialMultiplier={materialMultiplier} newConstructionPrices={newConstructionPrices} sampleCounts={sampleCounts} />
       )}
     </div>
   );

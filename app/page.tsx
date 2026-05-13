@@ -7,8 +7,9 @@ import MarketTabs from "@/components/MarketTabs";
 import { fetchMarketData } from "@/lib/fetchMarketData";
 import { fetchMaterials } from "@/lib/fetchMaterials";
 import { fetchMortgageRates } from "@/lib/fetchMortgageRates";
-import { fetchListings, deriveNewConstructionPrices } from "@/lib/fetchListings";
+import { fetchListings } from "@/lib/fetchListings";
 import { fetchRealListings } from "@/lib/fetchRealListings";
+import { fetchNewConstructionComps } from "@/lib/fetchNewConstructionComps";
 
 async function fetchAll() {
   const [neighborhoods, matsResult, rates] = await Promise.all([
@@ -17,10 +18,14 @@ async function fetchAll() {
     fetchMortgageRates().catch((): MortgageRate[] => []),
   ]);
 
-  // Derive sale price estimates from live Zillow top-tier ZHVI ÷ typical new build sqft
-  const newConstructionPrices = deriveNewConstructionPrices(neighborhoods);
+  // Derive new construction sale price from real recently sold comps (built last 2 years)
+  const { prices: newConstructionPrices, sampleCounts } =
+    await fetchNewConstructionComps().catch(() => ({
+      prices:       {} as Record<string, number>,
+      sampleCounts: {} as Record<string, number>,
+    }));
 
-  // Fetch real Zillow listings; fall back to sample data if API fails
+  // Fetch real listings (pre-1970 single family, paginated)
   let listings, dataNote;
   try {
     ({ listings, dataNote } = await fetchRealListings(newConstructionPrices, matsResult.materialCostMultiplier));
@@ -37,11 +42,12 @@ async function fetchAll() {
     listings,
     dataNote,
     newConstructionPrices,
+    sampleCounts,
   };
 }
 
 export default async function Home() {
-  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote, newConstructionPrices } = await fetchAll();
+  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote, newConstructionPrices, sampleCounts } = await fetchAll();
 
   const defaultRate     = mortgageRates.find((r) => r.product.includes("30 Year Fixed"))?.rate ?? 7.0;
   const profitableCount = listings.filter((l) => l.roi > 0).length;
@@ -145,7 +151,7 @@ export default async function Home() {
               <p className="text-slate-400 text-xs mt-0.5">Overall market trends · New construction pricing · Source: Zillow Research &amp; BLS</p>
             </div>
           </div>
-          <MarketTabs neighborhoods={neighborhoods} materialMultiplier={materialCostMultiplier} newConstructionPrices={newConstructionPrices} />
+          <MarketTabs neighborhoods={neighborhoods} materialMultiplier={materialCostMultiplier} newConstructionPrices={newConstructionPrices} sampleCounts={sampleCounts} />
         </section>
 
         {/* Profit Calculator */}
