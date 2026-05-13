@@ -5,8 +5,14 @@ import ProfitCalculatorWrapper from "@/components/ProfitCalculatorWrapper";
 import ListingsTable from "@/components/ListingsTable";
 import MarketTabs from "@/components/MarketTabs";
 
+function getBaseUrl() {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  return "http://localhost:3000";
+}
+
 async function fetchAll() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const base = getBaseUrl();
   const [marketRes, materialsRes, ratesRes] = await Promise.allSettled([
     fetch(`${base}/api/market-data`,    { cache: "no-store" }),
     fetch(`${base}/api/materials`,      { cache: "no-store" }),
