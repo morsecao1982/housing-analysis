@@ -1,43 +1,30 @@
-import { NeighborhoodData, MortgageRate, MaterialIndex, PropertyListing } from "@/types/housing";
+import { MortgageRate, MaterialIndex, PropertyListing, NeighborhoodData } from "@/types/housing";
 import MaterialCosts from "@/components/MaterialCosts";
 import MortgageRates from "@/components/MortgageRates";
 import ProfitCalculatorWrapper from "@/components/ProfitCalculatorWrapper";
 import ListingsTable from "@/components/ListingsTable";
 import MarketTabs from "@/components/MarketTabs";
-
-function getBaseUrl() {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
-  return "http://localhost:3000";
-}
+import { fetchMarketData } from "@/lib/fetchMarketData";
+import { fetchMaterials } from "@/lib/fetchMaterials";
+import { fetchMortgageRates } from "@/lib/fetchMortgageRates";
+import { fetchListings } from "@/lib/fetchListings";
 
 async function fetchAll() {
-  const base = getBaseUrl();
-  const [marketRes, materialsRes, ratesRes] = await Promise.allSettled([
-    fetch(`${base}/api/market-data`,    { cache: "no-store" }),
-    fetch(`${base}/api/materials`,      { cache: "no-store" }),
-    fetch(`${base}/api/mortgage-rates`, { cache: "no-store" }),
+  const [neighborhoods, matsResult, rates] = await Promise.all([
+    fetchMarketData().catch((): NeighborhoodData[] => []),
+    fetchMaterials().catch(() => ({ materials: [] as MaterialIndex[], materialCostMultiplier: 1 })),
+    fetchMortgageRates().catch((): MortgageRate[] => []),
   ]);
 
-  const neighborhoods: NeighborhoodData[] =
-    marketRes.status === "fulfilled" && marketRes.value.ok ? await marketRes.value.json() : [];
-  const mats =
-    materialsRes.status === "fulfilled" && materialsRes.value.ok
-      ? await materialsRes.value.json()
-      : { materials: [], materialCostMultiplier: 1 };
-  const ratesData =
-    ratesRes.status === "fulfilled" && ratesRes.value.ok ? await ratesRes.value.json() : { rates: [] };
-
-  const listingsRes = await fetch(`${base}/api/listings?materialMultiplier=${mats.materialCostMultiplier}`, { cache: "no-store" });
-  const listingsData = listingsRes.ok ? await listingsRes.json() : { listings: [], dataNote: "" };
+  const { listings, dataNote } = fetchListings(matsResult.materialCostMultiplier);
 
   return {
     neighborhoods,
-    materials: mats.materials as MaterialIndex[],
-    materialCostMultiplier: mats.materialCostMultiplier as number,
-    mortgageRates: ratesData.rates as MortgageRate[],
-    listings: listingsData.listings as PropertyListing[],
-    dataNote: listingsData.dataNote as string,
+    materials:               matsResult.materials,
+    materialCostMultiplier:  matsResult.materialCostMultiplier,
+    mortgageRates:           rates,
+    listings,
+    dataNote,
   };
 }
 
