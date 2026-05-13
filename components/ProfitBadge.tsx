@@ -5,12 +5,12 @@ interface Props {
 }
 
 export function roiColor(roi: number) {
-  if (roi > 20)  return { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30", dot: "bg-emerald-400", label: "High Profit" };
-  if (roi > 10)  return { bg: "bg-green-500/15",   text: "text-green-400",   border: "border-green-500/30",   dot: "bg-green-400",   label: "Profitable" };
-  if (roi > 5)   return { bg: "bg-lime-500/15",    text: "text-lime-400",    border: "border-lime-500/30",    dot: "bg-lime-400",    label: "Marginal" };
-  if (roi > 0)   return { bg: "bg-yellow-500/15",  text: "text-yellow-400",  border: "border-yellow-500/30",  dot: "bg-yellow-400",  label: "Break-even" };
-  if (roi > -10) return { bg: "bg-orange-500/15",  text: "text-orange-400",  border: "border-orange-500/30",  dot: "bg-orange-400",  label: "Risky" };
-  return           { bg: "bg-red-500/15",     text: "text-red-400",     border: "border-red-500/30",     dot: "bg-red-400",     label: "Avoid" };
+  if (roi > 20)  return { bg: "bg-emerald-50",  text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", label: "High Profit",  hex: "#059669" };
+  if (roi > 10)  return { bg: "bg-green-50",    text: "text-green-700",   border: "border-green-200",   dot: "bg-green-500",   label: "Profitable",  hex: "#16a34a" };
+  if (roi > 5)   return { bg: "bg-lime-50",     text: "text-lime-700",    border: "border-lime-200",    dot: "bg-lime-500",    label: "Marginal",    hex: "#65a30d" };
+  if (roi > 0)   return { bg: "bg-yellow-50",   text: "text-yellow-700",  border: "border-yellow-200",  dot: "bg-yellow-500",  label: "Break-even",  hex: "#ca8a04" };
+  if (roi > -10) return { bg: "bg-orange-50",   text: "text-orange-700",  border: "border-orange-200",  dot: "bg-orange-500",  label: "Risky",       hex: "#ea580c" };
+  return           { bg: "bg-red-50",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500",     label: "Avoid",       hex: "#dc2626" };
 }
 
 export function formatCurrencyCompact(v: number): string {

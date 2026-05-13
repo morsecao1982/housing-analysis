@@ -19,24 +19,28 @@ function fmt(n: number) {
 function StatusBadge({ status, expectedDate }: { status: string; expectedDate?: string }) {
   if (status === "coming_soon") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-400 text-xs font-semibold">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
         Coming Soon
-        {expectedDate && <span className="opacity-60 font-normal">· {new Date(expectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>}
+        {expectedDate && (
+          <span className="opacity-60 font-normal">
+            · {new Date(expectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        )}
       </span>
     );
   }
   if (status === "pending") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-400/10 border border-blue-400/30 text-blue-400 text-xs font-semibold">
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
         Pending
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-400/10 border border-green-400/30 text-green-400 text-xs font-semibold">
-      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">
+      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
       Active
     </span>
   );
@@ -49,10 +53,13 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   const [filterNeighborhood, setFilterNeighborhood] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const neighborhoods = useMemo(() => ["all", ...Array.from(new Set(listings.map((l) => l.neighborhood)))], [listings]);
+  const neighborhoods = useMemo(
+    () => ["all", ...Array.from(new Set(listings.map((l) => l.neighborhood)))],
+    [listings]
+  );
 
   const sorted = useMemo(() => {
-    let filtered = listings.filter((l) => {
+    const filtered = listings.filter((l) => {
       if (filterStatus !== "all" && l.status !== filterStatus) return false;
       if (filterNeighborhood !== "all" && l.neighborhood !== filterNeighborhood) return false;
       return true;
@@ -70,7 +77,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
     else { setSortKey(key); setSortDir("desc"); }
   }
 
-  const activeCount = listings.filter((l) => l.status === "active").length;
+  const activeCount     = listings.filter((l) => l.status === "active").length;
   const comingSoonCount = listings.filter((l) => l.status === "coming_soon").length;
   const profitableCount = listings.filter((l) => l.roi > 0).length;
 
@@ -80,7 +87,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
       <th
         onClick={() => toggleSort(k)}
         className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap transition-colors ${
-          active ? "text-amber-400" : "text-slate-500 hover:text-slate-300"
+          active ? "text-amber-700" : "text-slate-400 hover:text-slate-600"
         }`}
       >
         {label} {active ? (sortDir === "desc" ? "↓" : "↑") : "↕"}
@@ -93,26 +100,28 @@ export default function ListingsTable({ listings, dataNote }: Props) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: "Active Listings", value: activeCount, color: "text-green-400" },
-          { label: "Coming Soon",     value: comingSoonCount, color: "text-amber-400" },
-          { label: "Profitable Deals", value: `${profitableCount} of ${listings.length}`, color: "text-emerald-400" },
+          { label: "Active Listings",   value: activeCount,                            color: "text-green-600"   },
+          { label: "Coming Soon",       value: comingSoonCount,                        color: "text-amber-600"   },
+          { label: "Profitable Deals",  value: `${profitableCount} of ${listings.length}`, color: "text-emerald-600" },
         ].map((s) => (
-          <div key={s.label} className="bg-[#0D1825] rounded-xl border border-white/5 px-4 py-3">
+          <div key={s.label} className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-slate-500 text-xs mt-0.5">{s.label}</div>
+            <div className="text-slate-400 text-xs mt-0.5">{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex rounded-xl border border-white/5 overflow-hidden">
+        <div className="flex rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           {(["all", "active", "coming_soon"] as FilterStatus[]).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                filterStatus === s ? "bg-amber-400/15 text-amber-400" : "text-slate-500 hover:text-slate-300"
+                filterStatus === s
+                  ? "bg-amber-50 text-amber-700 border-r border-amber-200"
+                  : "text-slate-500 hover:text-slate-700 bg-white border-r border-slate-200 last:border-0"
               }`}
             >
               {s === "all" ? "All" : s === "active" ? "Active" : "Coming Soon"}
@@ -122,30 +131,30 @@ export default function ListingsTable({ listings, dataNote }: Props) {
         <select
           value={filterNeighborhood}
           onChange={(e) => setFilterNeighborhood(e.target.value)}
-          className="bg-[#0D1825] border border-white/5 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-amber-400/30"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600 shadow-sm focus:outline-none focus:border-amber-400"
         >
           {neighborhoods.map((n) => (
             <option key={n} value={n}>{n === "all" ? "All Neighborhoods" : n}</option>
           ))}
         </select>
-        <div className="ml-auto text-xs text-slate-500 self-center">{sorted.length} properties</div>
+        <div className="ml-auto text-xs text-slate-400 self-center">{sorted.length} properties</div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-white/5">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
         <table className="w-full border-collapse">
-          <thead className="bg-[#0A1520]">
+          <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Property</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Property</th>
               <SortTh label="Year Built" k="yearBuilt" />
-              <SortTh label="List Price" k="listPrice" />
-              <SortTh label="Lot Size" k="lotSqft" />
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">New Build</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Total Cost</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Exp. Sale</th>
+              <SortTh label="List Price"  k="listPrice" />
+              <SortTh label="Lot Size"    k="lotSqft" />
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">New Build</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Total Cost</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Exp. Sale</th>
               <SortTh label="Profit / ROI" k="roi" />
-              <SortTh label="DOM" k="daysOnMarket" />
+              <SortTh label="DOM"          k="daysOnMarket" />
             </tr>
           </thead>
           <tbody>
@@ -157,87 +166,134 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                   <tr
                     key={l.id}
                     onClick={() => setExpanded(isExpanded ? null : l.id)}
-                    className={`border-t border-white/5 cursor-pointer transition-colors ${
-                      isExpanded ? "bg-[#162535]" : i % 2 === 0 ? "bg-[#0D1825] hover:bg-[#121E2E]" : "bg-[#0B1521] hover:bg-[#121E2E]"
+                    className={`border-t border-slate-100 cursor-pointer transition-colors ${
+                      isExpanded
+                        ? "bg-slate-50"
+                        : i % 2 === 0
+                        ? "bg-white hover:bg-slate-50"
+                        : "bg-slate-50/60 hover:bg-slate-100"
                     }`}
-                    style={{ borderLeft: `3px solid ${l.roi > 20 ? "#10b981" : l.roi > 10 ? "#22c55e" : l.roi > 5 ? "#84cc16" : l.roi > 0 ? "#eab308" : l.roi > -10 ? "#f97316" : "#ef4444"}` }}
+                    style={{ borderLeft: `3px solid ${c.hex}` }}
                   >
+                    <td className="px-4 py-3"><StatusBadge status={l.status} expectedDate={l.expectedDate} /></td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={l.status} expectedDate={l.expectedDate} />
+                      <div className="text-slate-800 text-sm font-semibold">{l.address}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-slate-400 text-xs">{l.neighborhood} · ZIP {l.zip}</span>
+                        <a
+                          href={`https://www.zillow.com/homes/${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}_rb/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
+                        >
+                          Zillow
+                        </a>
+                        <a
+                          href={`https://www.redfin.com/stingray/do/location-search?location=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 font-medium transition-colors"
+                        >
+                          Redfin
+                        </a>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-white text-sm font-medium">{l.address}</div>
-                      <div className="text-slate-500 text-xs">{l.neighborhood} · ZIP {l.zip}</div>
+                      <span className="text-slate-700 text-sm">{l.yearBuilt}</span>
+                      <span className="text-slate-400 text-xs block">{2026 - l.yearBuilt} yrs old</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-slate-300 text-sm">{l.yearBuilt}</span>
-                      <span className="text-slate-600 text-xs block">{2026 - l.yearBuilt} yrs old</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-200 text-sm font-medium tabular-nums">{fmt(l.listPrice)}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm tabular-nums">{l.lotSqft.toLocaleString()} sf</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm tabular-nums">{l.newBuildSqft.toLocaleString()} sf</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm tabular-nums">{fmt(l.totalInvestment)}</td>
-                    <td className="px-4 py-3 text-slate-300 text-sm tabular-nums">{fmt(l.expectedSale)}</td>
-                    <td className="px-4 py-3">
-                      <ProfitBadge roi={l.roi} profit={l.profit} size="sm" />
-                    </td>
+                    <td className="px-4 py-3 text-slate-800 text-sm font-semibold tabular-nums">{fmt(l.listPrice)}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm tabular-nums">{l.lotSqft.toLocaleString()} sf</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm tabular-nums">{l.newBuildSqft.toLocaleString()} sf</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm tabular-nums">{fmt(l.totalInvestment)}</td>
+                    <td className="px-4 py-3 text-slate-600 text-sm tabular-nums">{fmt(l.expectedSale)}</td>
+                    <td className="px-4 py-3"><ProfitBadge roi={l.roi} profit={l.profit} size="sm" /></td>
                     <td className="px-4 py-3">
                       {l.status === "coming_soon" ? (
-                        <span className="text-amber-400 text-xs">—</span>
+                        <span className="text-amber-500 text-xs">—</span>
                       ) : (
-                        <span className={`text-sm tabular-nums ${l.daysOnMarket > 45 ? "text-orange-400" : "text-slate-300"}`}>
+                        <span className={`text-sm tabular-nums font-medium ${l.daysOnMarket > 45 ? "text-orange-600" : "text-slate-600"}`}>
                           {l.daysOnMarket}d
                         </span>
                       )}
                     </td>
                   </tr>
+
                   {isExpanded && (
-                    <tr key={`${l.id}-expanded`} className="bg-[#162535] border-t border-white/5">
+                    <tr key={`${l.id}-exp`} className="border-t border-slate-200 bg-slate-50">
                       <td colSpan={10} className="px-6 py-5">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 text-sm">
                           <div>
-                            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Cost Breakdown</div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between"><span className="text-slate-400">Lot Purchase</span><span className="text-slate-200 tabular-nums">{fmt(l.listPrice)}</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Demolition</span><span className="text-slate-200 tabular-nums">{fmt(l.demolitionCost)}</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Build (all-in)</span><span className="text-slate-200 tabular-nums">{fmt(l.buildCost)}</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Holding Costs</span><span className="text-slate-200 tabular-nums">{fmt(l.holdingCosts)}</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Selling Costs</span><span className="text-slate-200 tabular-nums">{fmt(l.sellingCosts)}</span></div>
-                              <div className="flex justify-between border-t border-white/10 pt-1 mt-1"><span className="text-white font-medium">Total</span><span className="text-white font-medium tabular-nums">{fmt(l.totalInvestment)}</span></div>
+                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">Cost Breakdown</div>
+                            <div className="space-y-1.5">
+                              {[
+                                ["Lot Purchase",    l.listPrice],
+                                ["Demolition",      l.demolitionCost],
+                                ["Build (all-in)",  l.buildCost],
+                                ["Holding Costs",   l.holdingCosts],
+                                ["Selling Costs",   l.sellingCosts],
+                              ].map(([label, val]) => (
+                                <div key={label as string} className="flex justify-between">
+                                  <span className="text-slate-500 text-xs">{label as string}</span>
+                                  <span className="text-slate-700 text-xs tabular-nums">{fmt(val as number)}</span>
+                                </div>
+                              ))}
+                              <div className="flex justify-between border-t border-slate-200 pt-1.5 mt-1">
+                                <span className="text-slate-700 text-xs font-bold">Total</span>
+                                <span className="text-slate-800 text-xs font-bold tabular-nums">{fmt(l.totalInvestment)}</span>
+                              </div>
                             </div>
                           </div>
+
                           <div>
-                            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Property Details</div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between"><span className="text-slate-400">Existing Home</span><span className="text-slate-200">{l.existingSqft.toLocaleString()} sqft · {l.beds}bd/{l.baths}ba</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Lot Size</span><span className="text-slate-200">{l.lotSqft.toLocaleString()} sqft</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">New Build</span><span className="text-slate-200">{l.newBuildSqft.toLocaleString()} sqft</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Build Cost/sqft</span><span className="text-slate-200">${(l.buildCost / l.newBuildSqft).toFixed(0)}/sf</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Sale Price/sqft</span><span className="text-slate-200">${l.newConstructionPricePerSqft}/sf</span></div>
+                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">Property Details</div>
+                            <div className="space-y-1.5">
+                              {[
+                                ["Existing Home",   `${l.existingSqft.toLocaleString()} sqft · ${l.beds}bd/${l.baths}ba`],
+                                ["Lot Size",        `${l.lotSqft.toLocaleString()} sqft`],
+                                ["New Build",       `${l.newBuildSqft.toLocaleString()} sqft`],
+                                ["Build Cost/sqft", `$${(l.buildCost / l.newBuildSqft).toFixed(0)}/sf`],
+                                ["Sale Price/sqft", `$${l.newConstructionPricePerSqft}/sf`],
+                              ].map(([label, val]) => (
+                                <div key={label as string} className="flex justify-between">
+                                  <span className="text-slate-500 text-xs">{label as string}</span>
+                                  <span className="text-slate-700 text-xs">{val as string}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
+
                           <div>
-                            <div className="text-slate-500 text-xs uppercase tracking-wider mb-2">Returns</div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between"><span className="text-slate-400">Expected Sale</span><span className="text-slate-200 tabular-nums">{fmt(l.expectedSale)}</span></div>
-                              <div className="flex justify-between"><span className="text-slate-400">Total Investment</span><span className="text-slate-200 tabular-nums">{fmt(l.totalInvestment)}</span></div>
-                              <div className="flex justify-between border-t border-white/10 pt-1 mt-1">
-                                <span className="text-white font-medium">Net Profit</span>
-                                <span className={`font-bold tabular-nums ${l.profit >= 0 ? "text-green-400" : "text-red-400"}`}>{formatCurrencyCompact(l.profit)}</span>
+                            <div className="text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">Returns</div>
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between">
+                                <span className="text-slate-500 text-xs">Expected Sale</span>
+                                <span className="text-slate-700 text-xs tabular-nums">{fmt(l.expectedSale)}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span className="text-white font-medium">ROI</span>
-                                <span className={`font-bold ${l.roi >= 0 ? "text-green-400" : "text-red-400"}`}>{l.roi.toFixed(1)}%</span>
+                                <span className="text-slate-500 text-xs">Total Investment</span>
+                                <span className="text-slate-700 text-xs tabular-nums">{fmt(l.totalInvestment)}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-slate-200 pt-1.5 mt-1">
+                                <span className="text-slate-700 text-xs font-bold">Net Profit</span>
+                                <span className={`text-xs font-bold tabular-nums ${l.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                  {formatCurrencyCompact(l.profit)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-slate-700 text-xs font-bold">ROI</span>
+                                <span className={`text-xs font-bold ${l.roi >= 0 ? "text-green-600" : "text-red-600"}`}>{l.roi.toFixed(1)}%</span>
                               </div>
                             </div>
                           </div>
-                          <div>
-                            <div className={`rounded-xl border p-3 ${roiColor(l.roi).bg} ${roiColor(l.roi).border}`}>
-                              <div className={`text-xs font-semibold uppercase tracking-wider mb-1 ${roiColor(l.roi).text}`}>{roiColor(l.roi).label}</div>
-                              <div className={`text-2xl font-bold ${roiColor(l.roi).text}`}>{l.roi.toFixed(1)}% ROI</div>
-                              <div className="text-slate-400 text-xs mt-2">
-                                Based on {l.newBuildSqft.toLocaleString()} sqft new build at ${l.newConstructionPricePerSqft}/sqft market rate. 18-month timeline, 7.5% construction loan.
-                              </div>
+
+                          <div className={`rounded-xl border p-4 ${c.bg} ${c.border}`}>
+                            <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${c.text}`}>{c.label}</div>
+                            <div className={`text-2xl font-bold ${c.text}`}>{l.roi.toFixed(1)}% ROI</div>
+                            <div className="text-slate-500 text-xs mt-2">
+                              {l.newBuildSqft.toLocaleString()} sqft new build at ${l.newConstructionPricePerSqft}/sqft. 18-month build, 7.5% construction loan.
                             </div>
                           </div>
                         </div>
@@ -251,8 +307,8 @@ export default function ListingsTable({ listings, dataNote }: Props) {
         </table>
       </div>
 
-      <p className="text-slate-600 text-xs mt-3 text-center">
-        ⚠ {dataNote} · Click any row to expand cost breakdown · Sorted by {sortKey}
+      <p className="text-slate-400 text-xs mt-3 text-center">
+        ⚠ {dataNote} · Click any row to expand cost breakdown
       </p>
     </div>
   );

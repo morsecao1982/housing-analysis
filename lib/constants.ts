@@ -58,3 +58,30 @@ export const LOT_VALUE_RATIO = { min: 0.20, max: 0.35 };
 // Zillow Research CSV URLs
 export const ZILLOW_ZHVI_URL =
   "https://files.zillowstatic.com/research/public_csvs/zhvi/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv";
+
+// New construction sale price per sqft by neighborhood (NoVA 2026, custom builds)
+export const NEW_CONSTRUCTION_PRICE_SQFT: Record<string, number> = {
+  McLean: 920,
+  "Great Falls": 820,
+  Vienna: 700,
+  "Falls Church": 710,
+  Tysons: 780,
+};
+
+// Typical new build sqft for teardown projects by neighborhood
+export const TYPICAL_NEW_BUILD_SQFT: Record<string, number> = {
+  McLean: 5000,
+  "Great Falls": 5500,
+  Vienna: 4000,
+  "Falls Church": 4000,
+  Tysons: 4500,
+};
+
+// Typical existing home sqft (for demo cost estimate) by neighborhood
+export const TYPICAL_EXISTING_SQFT: Record<string, number> = {
+  McLean: 2200,
+  "Great Falls": 2400,
+  Vienna: 1700,
+  "Falls Church": 1800,
+  Tysons: 2000,
+};
