@@ -180,13 +180,13 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-slate-400 text-xs">{l.neighborhood} · ZIP {l.zip}</span>
                         <a
-                          href={`https://www.zillow.com/homes/${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}_rb/`}
+                          href={`https://www.zillow.com/homes/${`${l.address} ${l.neighborhood} VA ${l.zip}`.replace(/\s+/g, "-")}_rb/`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="text-xs px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
                         >
-                          Zillow
+                          Zillow ↗
                         </a>
                         <a
                           href={`https://www.redfin.com/stingray/do/location-search?location=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
@@ -195,7 +195,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                           onClick={(e) => e.stopPropagation()}
                           className="text-xs px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 font-medium transition-colors"
                         >
-                          Redfin
+                          Redfin ↗
                         </a>
                       </div>
                     </td>
