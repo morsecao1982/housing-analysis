@@ -243,11 +243,13 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                     <td className="px-4 py-3">
                       {l.propertyType === "lot_only" ? (
                         <span className="text-purple-600 text-xs font-semibold">Vacant Lot</span>
-                      ) : (
+                      ) : l.yearBuilt > 0 ? (
                         <>
                           <span className="text-slate-700 text-sm">{l.yearBuilt}</span>
                           <span className="text-slate-400 text-xs block">{2026 - l.yearBuilt} yrs old</span>
                         </>
+                      ) : (
+                        <span className="text-slate-400 text-xs">N/A</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-800 text-sm font-semibold tabular-nums">{fmt(l.listPrice)}</td>

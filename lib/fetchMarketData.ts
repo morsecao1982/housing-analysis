@@ -28,8 +28,8 @@ function parseZillowCsv(csv: string) {
 
 export async function fetchMarketData(): Promise<NeighborhoodData[]> {
   const [medianRes, topTierRes] = await Promise.all([
-    fetch(ZILLOW_ZHVI_URL,     { next: { revalidate: 86400 } }),
-    fetch(ZILLOW_TOP_TIER_URL, { next: { revalidate: 86400 } }),
+    fetch(ZILLOW_ZHVI_URL,     { next: { revalidate: 604800 } }),
+    fetch(ZILLOW_TOP_TIER_URL, { next: { revalidate: 604800 } }),
   ]);
   const [medianCsv, topTierCsv] = await Promise.all([medianRes.text(), topTierRes.text()]);
   const medianData  = parseZillowCsv(medianCsv);

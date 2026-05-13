@@ -16,7 +16,7 @@ export async function fetchMortgageRates(): Promise<MortgageRate[]> {
         "x-rapidapi-host": "zllw-working-api.p.rapidapi.com",
         "Content-Type":    "application/json",
       },
-      next: { revalidate: 3600 },
+      next: { revalidate: 86400 },
     });
     const data = await res.json();
     return FEATURED.filter((k) => data[k]).map((k) => ({

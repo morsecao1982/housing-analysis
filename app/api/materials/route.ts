@@ -9,7 +9,7 @@ export async function GET() {
     const results = await Promise.allSettled(
       PPI_SERIES.map(async (series) => {
         const res = await fetch(`${BLS_API}${series.id}`, {
-          next: { revalidate: 86400 },
+          next: { revalidate: 604800 },
         });
         const json = await res.json();
         const data: { year: string; period: string; value: string }[] =

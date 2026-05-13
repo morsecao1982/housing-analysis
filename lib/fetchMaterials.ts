@@ -6,7 +6,7 @@ const BLS_API = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
 export async function fetchMaterials(): Promise<{ materials: MaterialIndex[]; materialCostMultiplier: number }> {
   const results = await Promise.allSettled(
     PPI_SERIES.map(async (series) => {
-      const res  = await fetch(`${BLS_API}${series.id}`, { next: { revalidate: 86400 } });
+      const res  = await fetch(`${BLS_API}${series.id}`, { next: { revalidate: 604800 } });
       const json = await res.json();
       const data: { year: string; period: string; value: string }[] =
         json?.Results?.series?.[0]?.data ?? [];
