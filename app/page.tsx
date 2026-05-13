@@ -26,11 +26,13 @@ async function fetchAll() {
     }));
 
   // Fetch real listings (pre-1970 single family, paginated)
-  let listings, dataNote;
+  let listings, dataNote, listingsError: string | null = null;
   try {
     ({ listings, dataNote } = await fetchRealListings(newConstructionPrices, matsResult.materialCostMultiplier));
-    if (listings.length === 0) throw new Error("no listings returned");
-  } catch {
+    if (listings.length === 0) throw new Error("API returned 0 listings — quota may be exhausted");
+  } catch (err) {
+    listingsError = err instanceof Error ? err.message : String(err);
+    console.error("fetchRealListings failed:", listingsError);
     ({ listings, dataNote } = fetchListings(matsResult.materialCostMultiplier, newConstructionPrices));
   }
 
@@ -43,11 +45,12 @@ async function fetchAll() {
     dataNote,
     newConstructionPrices,
     sampleCounts,
+    listingsError,
   };
 }
 
 export default async function Home() {
-  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote, newConstructionPrices, sampleCounts } = await fetchAll();
+  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote, newConstructionPrices, sampleCounts, listingsError } = await fetchAll();
 
   const defaultRate     = mortgageRates.find((r) => r.product.includes("30 Year Fixed"))?.rate ?? 7.0;
   const profitableCount = listings.filter((l) => l.roi > 0).length;
@@ -127,6 +130,14 @@ export default async function Home() {
             <span key={l.label} className={`px-2.5 py-1 rounded-lg border text-xs font-medium ${l.bg} ${l.text} ${l.border}`}>{l.label}</span>
           ))}
         </div>
+
+        {/* API error banner */}
+        {listingsError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+            <span className="font-bold flex-shrink-0">⚠ Showing sample data.</span>
+            <span>Live listings unavailable — <span className="font-mono text-xs bg-red-100 px-1 rounded">{listingsError}</span></span>
+          </div>
+        )}
 
         {/* Listings */}
         <section>

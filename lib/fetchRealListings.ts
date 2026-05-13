@@ -48,8 +48,12 @@ async function fetchPage(query: string, offset: number): Promise<{ listings: Raw
       next: { revalidate: 604800 },
     }
   );
-  if (!res.ok) return { listings: [], total: 0 };
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status} for "${query}": ${body.slice(0, 200)}`);
+  }
   const json = await res.json();
+  if (json?.message) throw new Error(`API message for "${query}": ${json.message}`);
   return {
     listings: json?.listings ?? [],
     total:    json?.totalResultCount ?? 0,
