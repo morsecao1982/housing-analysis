@@ -11,6 +11,10 @@ export interface NeighborhoodData {
   medianHomeValueChange1Mo: number;
   medianHomeValueChange12Mo: number;
   priceHistory: { date: string; value: number }[];
+  // Top-tier ZHVI (upper third of homes by value) — new construction proxy
+  newConstructionValue: number;
+  newConstructionChange12Mo: number;
+  newConstructionHistory: { date: string; value: number }[];
 }
 
 export interface MaterialIndex {

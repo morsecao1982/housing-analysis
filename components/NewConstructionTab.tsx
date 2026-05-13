@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid,
+  ResponsiveContainer, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, Tooltip, Legend, CartesianGrid,
 } from "recharts";
 import { NeighborhoodData } from "@/types/housing";
 import {
@@ -68,6 +69,19 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
     "Total Build Cost": Math.round((r.buildCost + r.demolitionCost) / 1000),
   }));
 
+  // Build combined trend dataset: all neighborhoods on one timeline
+  const allDates = neighborhoods[0]?.newConstructionHistory.map((h) => h.date) ?? [];
+  const combinedTrend = allDates.map((date) => {
+    const point: Record<string, string | number> = { date: date.slice(0, 7) }; // YYYY-MM
+    neighborhoods.forEach((n) => {
+      const match = n.newConstructionHistory.find((h) => h.date === date);
+      if (match) point[n.name] = Math.round(match.value / 1000) / 1000; // $M
+    });
+    return point;
+  });
+
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"];
+
   return (
     <div className="space-y-8">
       {/* Summary cards */}
@@ -83,6 +97,122 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
             <div className="text-slate-500 text-xs mt-1">{s.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* New Construction Price Trends */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <div className="text-slate-800 font-bold text-base">New Construction Price Trend</div>
+            <div className="text-slate-400 text-xs mt-0.5">
+              Top-tier home values (upper 33%) · 24-month history · Source: Zillow Research
+            </div>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 font-medium">
+            All Neighborhoods
+          </span>
+        </div>
+
+        <div className="mt-4 mb-6">
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={combinedTrend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                tickFormatter={(v) => {
+                  const [y, m] = (v as string).split("-");
+                  return `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1]} '${y.slice(2)}`;
+                }}
+                interval={3}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: "#94a3b8" }}
+                tickFormatter={(v) => `$${v.toFixed(1)}M`}
+              />
+              <Tooltip
+                contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "12px" }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(v: any, name: any) => [`$${Number(v).toFixed(2)}M`, name]}
+                labelFormatter={(l) => `Month: ${l}`}
+              />
+              <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
+              {neighborhoods.map((n, i) => (
+                <Line
+                  key={n.name}
+                  type="monotone"
+                  dataKey={n.name}
+                  stroke={COLORS[i % COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Per-neighborhood 12mo change chips */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4 border-t border-slate-100">
+          {neighborhoods.map((n, i) => {
+            const isUp = n.newConstructionChange12Mo >= 0;
+            return (
+              <div key={n.name} className="text-center">
+                <div className="w-3 h-3 rounded-full mx-auto mb-1" style={{ background: COLORS[i % COLORS.length] }} />
+                <div className="text-slate-700 text-xs font-semibold">{n.name}</div>
+                <div className="text-slate-400 text-xs">{fmt(n.newConstructionValue)}</div>
+                <div className={`text-xs font-bold mt-0.5 ${isUp ? "text-green-600" : "text-red-600"}`}>
+                  {isUp ? "▲" : "▼"} {Math.abs(n.newConstructionChange12Mo).toFixed(1)}% YoY
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Individual neighborhood trend cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {neighborhoods.map((n, i) => {
+          const history = n.newConstructionHistory;
+          const isUp = n.newConstructionChange12Mo >= 0;
+          const yVals = history.map((h) => h.value);
+          const yMin = Math.min(...yVals) * 0.985;
+          const yMax = Math.max(...yVals) * 1.015;
+          return (
+            <div key={n.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                <span className={`text-xs font-bold ${isUp ? "text-green-600" : "text-red-600"}`}>
+                  {isUp ? "▲" : "▼"} {Math.abs(n.newConstructionChange12Mo).toFixed(1)}%
+                </span>
+              </div>
+              <div className="text-slate-800 font-bold text-sm mb-0.5">{n.name}</div>
+              <div className="text-slate-800 font-bold text-xl tabular-nums">{fmt(n.newConstructionValue)}</div>
+              <div className="text-slate-400 text-xs mb-3">Top-tier value</div>
+              {history.length > 1 && (
+                <div className="h-16">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={history}>
+                      <YAxis domain={[yMin, yMax]} hide />
+                      <Tooltip
+                        contentStyle={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "10px" }}
+                        formatter={(v: unknown) => [fmt(Number(v)), "Value"]}
+                        labelFormatter={(l) => String(l).slice(0, 7)}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke={COLORS[i % COLORS.length]}
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Charts row */}

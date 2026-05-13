@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { PropertyListing } from "@/types/housing";
 import ProfitBadge, { roiColor, formatCurrencyCompact } from "./ProfitBadge";
 
@@ -162,9 +162,8 @@ export default function ListingsTable({ listings, dataNote }: Props) {
               const c = roiColor(l.roi);
               const isExpanded = expanded === l.id;
               return (
-                <>
+                <Fragment key={l.id}>
                   <tr
-                    key={l.id}
                     onClick={() => setExpanded(isExpanded ? null : l.id)}
                     className={`border-t border-slate-100 cursor-pointer transition-colors ${
                       isExpanded
@@ -222,7 +221,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                   </tr>
 
                   {isExpanded && (
-                    <tr key={`${l.id}-exp`} className="border-t border-slate-200 bg-slate-50">
+                    <tr className="border-t border-slate-200 bg-slate-50">
                       <td colSpan={10} className="px-6 py-5">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 text-sm">
                           <div>
@@ -300,7 +299,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
