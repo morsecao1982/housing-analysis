@@ -40,17 +40,39 @@ interface RawListing {
   };
 }
 
-async function fetchForLocation(query: string): Promise<RawListing[]> {
+async function fetchPage(query: string, offset: number): Promise<{ listings: RawListing[]; total: number }> {
   const res = await fetch(
-    `https://${HOST}/for-sale?location=${encodeURIComponent(query)}&limit=50&year_built_max=1970`,
+    `https://${HOST}/for-sale?location=${encodeURIComponent(query)}&limit=50&offset=${offset}&year_built_max=1970`,
     {
       headers: { "x-rapidapi-key": KEY, "x-rapidapi-host": HOST },
-      next: { revalidate: 604800 }, // 7 days
+      next: { revalidate: 604800 },
     }
   );
-  if (!res.ok) return [];
+  if (!res.ok) return { listings: [], total: 0 };
   const json = await res.json();
-  return json?.listings ?? [];
+  return {
+    listings: json?.listings ?? [],
+    total:    json?.totalResultCount ?? 0,
+  };
+}
+
+async function fetchForLocation(query: string): Promise<RawListing[]> {
+  // Fetch first page to learn total count
+  const first = await fetchPage(query, 0);
+  const all   = [...first.listings];
+
+  // Fetch remaining pages in parallel
+  const totalPages = Math.ceil(first.total / 50);
+  if (totalPages > 1) {
+    const offsets = Array.from({ length: totalPages - 1 }, (_, i) => (i + 1) * 50);
+    const rest = await Promise.allSettled(offsets.map((off) => fetchPage(query, off)));
+    for (const r of rest) {
+      if (r.status === "fulfilled") all.push(...r.value.listings);
+    }
+  }
+
+  // Filter single family only
+  return all.filter((l) => l.description?.type === "single_family");
 }
 
 export async function fetchRealListings(
