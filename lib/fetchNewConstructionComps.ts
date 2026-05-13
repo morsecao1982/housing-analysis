@@ -33,7 +33,7 @@ async function fetchSoldComps(query: string): Promise<SoldListing[]> {
   const yearMin = currentYear - 2; // 2 years old or less = new construction
 
   const res = await fetch(
-    `https://${HOST}/sold-homes?location=${encodeURIComponent(query)}&limit=50&year_built_min=${yearMin}`,
+    `https://${HOST}/sold-homes?location=${query.replace(/ /g, "+")}&limit=50&year_built_min=${yearMin}`,
     {
       headers: { "x-rapidapi-key": KEY, "x-rapidapi-host": HOST },
       next: { revalidate: 604800 }, // 7-day cache

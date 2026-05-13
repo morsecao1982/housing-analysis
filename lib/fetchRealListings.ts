@@ -42,7 +42,7 @@ interface RawListing {
 
 async function fetchPage(query: string, offset: number): Promise<{ listings: RawListing[]; total: number }> {
   const res = await fetch(
-    `https://${HOST}/for-sale?location=${encodeURIComponent(query)}&limit=50&offset=${offset}&year_built_max=1970`,
+    `https://${HOST}/for-sale?location=${query.replace(/ /g, "+")}&limit=50&offset=${offset}&year_built_max=1970`,
     {
       headers: { "x-rapidapi-key": KEY, "x-rapidapi-host": HOST },
       next: { revalidate: 604800 },
