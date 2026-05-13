@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, Tooltip, Legend, CartesianGrid,
 } from "recharts";
 import { NeighborhoodData } from "@/types/housing";
+import InfoTooltip from "./InfoTooltip";
 import {
   NEW_CONSTRUCTION_PRICE_SQFT,
   TYPICAL_NEW_BUILD_SQFT,
@@ -86,17 +87,51 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
     <div className="space-y-8">
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Avg New Build Sale/sqft", value: `$${Math.round(Object.values(NEW_CONSTRUCTION_PRICE_SQFT).reduce((a, b) => a + b, 0) / 5)}/sf`, color: "text-blue-600" },
-          { label: "DC Metro CCI Premium", value: `${((DC_METRO_CCI - 1) * 100).toFixed(0)}% above national`, color: "text-amber-600" },
-          { label: "Material Cost Shift", value: `${materialMultiplier >= 1 ? "+" : ""}${((materialMultiplier - 1) * 100).toFixed(1)}%`, color: materialMultiplier >= 1 ? "text-red-600" : "text-green-600" },
-          { label: "All-in Build Cost/sqft", value: `$${Math.round(ALL_IN_BUILD_COST_SQFT * materialMultiplier * DC_METRO_CCI)}/sf`, color: "text-slate-700" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-slate-500 text-xs mt-1">{s.label}</div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div className="text-2xl font-bold text-blue-600">
+            <InfoTooltip
+              content={`Hardcoded estimate based on 2026 NoVA custom build sales research.\n\nPer neighborhood:\n• McLean: $920/sf\n• Great Falls: $820/sf\n• Tysons: $780/sf\n• Falls Church: $710/sf\n• Vienna: $700/sf\n\nAverage: $${Math.round(Object.values(NEW_CONSTRUCTION_PRICE_SQFT).reduce((a, b) => a + b, 0) / Object.values(NEW_CONSTRUCTION_PRICE_SQFT).length)}/sf\n\nTo update: lib/constants.ts → NEW_CONSTRUCTION_PRICE_SQFT`}
+            >
+              ${Math.round(Object.values(NEW_CONSTRUCTION_PRICE_SQFT).reduce((a, b) => a + b, 0) / Object.values(NEW_CONSTRUCTION_PRICE_SQFT).length)}/sf
+            </InfoTooltip>
           </div>
-        ))}
+          <div className="text-slate-500 text-xs mt-1">Avg New Build Sale/sqft</div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div className="text-2xl font-bold text-amber-600">
+            <InfoTooltip
+              content={`Hardcoded from RSMeans City Cost Index (CCI) for the Washington DC metro area.\n\nNational baseline = 1.0×\nDC Metro = ${DC_METRO_CCI}× (${((DC_METRO_CCI - 1) * 100).toFixed(0)}% premium)\n\nAccounts for higher local labor wages and material delivery costs vs. national average.\n\nUpdated annually by RSMeans. Current value reflects 2026 DC metro data.\n\nTo update: lib/constants.ts → DC_METRO_CCI`}
+            >
+              {((DC_METRO_CCI - 1) * 100).toFixed(0)}% above national
+            </InfoTooltip>
+          </div>
+          <div className="text-slate-500 text-xs mt-1">DC Metro CCI Premium</div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div className={`text-2xl font-bold ${materialMultiplier >= 1 ? "text-red-600" : "text-green-600"}`}>
+            <InfoTooltip
+              isLive
+              content={`Live data — BLS Producer Price Index (PPI), updated monthly.\n\nWeighted composite of 6 material indexes vs. 2-year baseline:\n• Lumber & Wood (18% weight)\n• Concrete (12%)\n• Steel & Iron (10%)\n• Copper / Wiring (8%)\n• Drywall (7%)\n• Roofing (8%)\n\nCurrent multiplier: ${materialMultiplier.toFixed(4)}×\nMeaning materials are ${materialMultiplier >= 1 ? ((materialMultiplier - 1) * 100).toFixed(1) + "% more" : (Math.abs((materialMultiplier - 1) * 100)).toFixed(1) + "% less"} expensive than 2 years ago.\n\nSource: api.bls.gov`}
+            >
+              {materialMultiplier >= 1 ? "+" : ""}{((materialMultiplier - 1) * 100).toFixed(1)}%
+            </InfoTooltip>
+          </div>
+          <div className="text-slate-500 text-xs mt-1">Material Cost Shift</div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div className="text-2xl font-bold text-slate-700">
+            <InfoTooltip
+              content={`Mixed: base cost is hardcoded, multipliers are live.\n\nFormula:\n$${ALL_IN_BUILD_COST_SQFT} base × ${materialMultiplier.toFixed(3)} material index × ${DC_METRO_CCI} CCI = $${Math.round(ALL_IN_BUILD_COST_SQFT * materialMultiplier * DC_METRO_CCI)}/sf\n\nBase $${ALL_IN_BUILD_COST_SQFT}/sf includes (premium quality):\n• Construction labor & materials\n• Architect / design fees (10%)\n• Permits & inspections\n• Site prep & utilities\n• Landscaping\n• 10% contingency buffer\n\nExcludes: land, demolition, holding costs, selling costs.\n\nTo update base: components/NewConstructionTab.tsx → ALL_IN_BUILD_COST_SQFT`}
+              width="w-80"
+            >
+              ${Math.round(ALL_IN_BUILD_COST_SQFT * materialMultiplier * DC_METRO_CCI)}/sf
+            </InfoTooltip>
+          </div>
+          <div className="text-slate-500 text-xs mt-1">All-in Build Cost/sqft</div>
+        </div>
       </div>
 
       {/* New Construction Price Trends */}
@@ -286,7 +321,14 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
                       <div className="text-slate-400 text-xs">{pct(r.yoy)} YoY market</div>
                     </td>
                     <td className="px-4 py-3 text-slate-700 text-sm font-medium tabular-nums">{fmt(r.medianValue)}</td>
-                    <td className="px-4 py-3 text-slate-700 text-sm tabular-nums">${r.newSalePriceSqft}/sf</td>
+                    <td className="px-4 py-3 text-slate-700 text-sm tabular-nums">
+                      <InfoTooltip
+                        content={`Hardcoded estimate for ${r.name}.\n\nBased on 2026 NoVA new construction sales data for custom-built homes in this neighborhood.\n\nTypical range: $${r.newSalePriceSqft - 80}–$${r.newSalePriceSqft + 80}/sf depending on finishes, lot size, and exact location.\n\nTo update: lib/constants.ts → NEW_CONSTRUCTION_PRICE_SQFT`}
+                        width="w-72"
+                      >
+                        ${r.newSalePriceSqft}/sf
+                      </InfoTooltip>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-sm font-semibold ${r.newConstrPremium > 0 ? "text-green-600" : "text-red-600"}`}>
                         {pct(r.newConstrPremium)}
@@ -298,7 +340,13 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
                     <td className="px-4 py-3 text-slate-700 text-sm font-medium tabular-nums">{fmt(r.expectedSale)}</td>
                     <td className="px-4 py-3">
                       <div className={`text-sm font-bold tabular-nums ${isPositive ? "text-emerald-600" : "text-red-600"}`}>
-                        {fmt(r.grossMargin)}
+                        <InfoTooltip
+                          content={`Gross margin = Expected Sale − Build Cost − Demo Cost.\n\nExpected Sale: ${r.newBuildSqft.toLocaleString()} sqft × $${r.newSalePriceSqft}/sf = ${fmt(r.expectedSale)}\nBuild Cost: ${r.newBuildSqft.toLocaleString()} sqft × $${ALL_IN_BUILD_COST_SQFT}/sf × ${materialMultiplier.toFixed(3)} × ${DC_METRO_CCI} = ${fmt(r.buildCost)}\nDemo Cost: ${r.demolitionCost.toLocaleString('en-US', {style:'currency',currency:'USD',maximumFractionDigits:0})}\n\n⚠ Does NOT include land/lot cost, holding costs, or selling costs.\nSee Profit Calculator for full net profit analysis.`}
+                          width="w-80"
+                          isLive={false}
+                        >
+                          {fmt(r.grossMargin)}
+                        </InfoTooltip>
                       </div>
                       <div className={`text-xs ${isPositive ? "text-emerald-500" : "text-red-400"}`}>
                         {pct(r.grossMarginPct)} margin
