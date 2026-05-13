@@ -11,9 +11,25 @@ interface Props {
 
 type SortKey = "roi" | "listPrice" | "profit" | "yearBuilt" | "lotSqft" | "daysOnMarket";
 type FilterStatus = "all" | "active" | "coming_soon";
+type FilterType = "all" | "teardown" | "lot_only";
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+function TypeBadge({ type }: { type: string }) {
+  if (type === "lot_only") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">
+        🏞 Lot Only
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-500 text-xs font-medium">
+      🏚 Tear-down
+    </span>
+  );
 }
 
 function StatusBadge({ status, expectedDate }: { status: string; expectedDate?: string }) {
@@ -50,6 +66,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("roi");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterNeighborhood, setFilterNeighborhood] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -61,6 +78,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   const sorted = useMemo(() => {
     const filtered = listings.filter((l) => {
       if (filterStatus !== "all" && l.status !== filterStatus) return false;
+      if (filterType !== "all" && l.propertyType !== filterType) return false;
       if (filterNeighborhood !== "all" && l.neighborhood !== filterNeighborhood) return false;
       return true;
     });
@@ -70,7 +88,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
       return sortDir === "desc" ? vb - va : va - vb;
     });
     return filtered;
-  }, [listings, sortKey, sortDir, filterStatus, filterNeighborhood]);
+  }, [listings, sortKey, sortDir, filterStatus, filterType, filterNeighborhood]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
@@ -80,6 +98,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   const activeCount     = listings.filter((l) => l.status === "active").length;
   const comingSoonCount = listings.filter((l) => l.status === "coming_soon").length;
   const profitableCount = listings.filter((l) => l.roi > 0).length;
+  const lotOnlyCount    = listings.filter((l) => l.propertyType === "lot_only").length;
 
   function SortTh({ label, k }: { label: string; k: SortKey }) {
     const active = sortKey === k;
@@ -98,11 +117,12 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   return (
     <div>
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: "Active Listings",   value: activeCount,                            color: "text-green-600"   },
-          { label: "Coming Soon",       value: comingSoonCount,                        color: "text-amber-600"   },
-          { label: "Profitable Deals",  value: `${profitableCount} of ${listings.length}`, color: "text-emerald-600" },
+          { label: "Active Listings",   value: activeCount,                                color: "text-green-600"  },
+          { label: "Coming Soon",       value: comingSoonCount,                            color: "text-amber-600"  },
+          { label: "Lot Only",          value: lotOnlyCount,                               color: "text-purple-600" },
+          { label: "Profitable Deals",  value: `${profitableCount} of ${listings.length}`, color: "text-emerald-600"},
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -115,16 +135,23 @@ export default function ListingsTable({ listings, dataNote }: Props) {
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           {(["all", "active", "coming_soon"] as FilterStatus[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                filterStatus === s
-                  ? "bg-amber-50 text-amber-700 border-r border-amber-200"
-                  : "text-slate-500 hover:text-slate-700 bg-white border-r border-slate-200 last:border-0"
+            <button key={s} onClick={() => setFilterStatus(s)}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-slate-200 last:border-0 ${
+                filterStatus === s ? "bg-amber-50 text-amber-700" : "text-slate-500 hover:text-slate-700 bg-white"
               }`}
             >
-              {s === "all" ? "All" : s === "active" ? "Active" : "Coming Soon"}
+              {s === "all" ? "All Status" : s === "active" ? "Active" : "Coming Soon"}
+            </button>
+          ))}
+        </div>
+        <div className="flex rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          {(["all", "teardown", "lot_only"] as FilterType[]).map((t) => (
+            <button key={t} onClick={() => setFilterType(t)}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-slate-200 last:border-0 ${
+                filterType === t ? "bg-purple-50 text-purple-700" : "text-slate-500 hover:text-slate-700 bg-white"
+              }`}
+            >
+              {t === "all" ? "All Types" : t === "teardown" ? "🏚 Tear-down" : "🏞 Lot Only"}
             </button>
           ))}
         </div>
@@ -146,6 +173,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Property</th>
               <SortTh label="Year Built" k="yearBuilt" />
               <SortTh label="List Price"  k="listPrice" />
@@ -175,6 +203,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                     style={{ borderLeft: `3px solid ${c.hex}` }}
                   >
                     <td className="px-4 py-3"><StatusBadge status={l.status} expectedDate={l.expectedDate} /></td>
+                    <td className="px-4 py-3"><TypeBadge type={l.propertyType} /></td>
                     <td className="px-4 py-3">
                       <div className="text-slate-800 text-sm font-semibold">{l.address}</div>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -200,8 +229,14 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-slate-700 text-sm">{l.yearBuilt}</span>
-                      <span className="text-slate-400 text-xs block">{2026 - l.yearBuilt} yrs old</span>
+                      {l.propertyType === "lot_only" ? (
+                        <span className="text-purple-600 text-xs font-semibold">Vacant Lot</span>
+                      ) : (
+                        <>
+                          <span className="text-slate-700 text-sm">{l.yearBuilt}</span>
+                          <span className="text-slate-400 text-xs block">{2026 - l.yearBuilt} yrs old</span>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-800 text-sm font-semibold tabular-nums">{fmt(l.listPrice)}</td>
                     <td className="px-4 py-3 text-slate-600 text-sm tabular-nums">{l.lotSqft.toLocaleString()} sf</td>

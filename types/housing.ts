@@ -46,6 +46,7 @@ export interface PropertyListing {
   newBuildSqft: number;
   beds: number;
   baths: number;
+  propertyType: "teardown" | "lot_only";
   status: "active" | "coming_soon" | "pending";
   listedDate?: string;
   expectedDate?: string;

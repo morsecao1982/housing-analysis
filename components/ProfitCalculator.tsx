@@ -73,11 +73,25 @@ export default function ProfitCalculator({ neighborhoods, materialMultiplier, de
 
           <div>
             <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1.5">Lot / Property Purchase Price</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-              <input type="number" value={inputs.lotPrice} step={100000} onChange={(e) => set("lotPrice", Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-amber-400" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => set("lotPrice", Math.max(0, inputs.lotPrice - 100000))}
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-bold text-lg hover:bg-slate-200 transition-colors"
+              >−</button>
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <input
+                  type="number" value={inputs.lotPrice} step={100000}
+                  onChange={(e) => set("lotPrice", Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <button
+                onClick={() => set("lotPrice", inputs.lotPrice + 100000)}
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-bold text-lg hover:bg-slate-200 transition-colors"
+              >+</button>
             </div>
+            <div className="text-slate-400 text-xs mt-1 text-right">±$100,000 per click</div>
           </div>
 
           <div>
