@@ -20,7 +20,7 @@ export interface MaterialIndex {
   baselineValue: number;
   changePercent: number;
   history: { date: string; value: number }[];
-  weight: number; // % of total build cost
+  weight: number;
 }
 
 export interface MortgageRate {
@@ -30,11 +30,40 @@ export interface MortgageRate {
   type: string;
 }
 
+export interface PropertyListing {
+  id: string;
+  address: string;
+  neighborhood: string;
+  zip: string;
+  yearBuilt: number;
+  listPrice: number;
+  lotSqft: number;
+  existingSqft: number;
+  newBuildSqft: number;
+  beds: number;
+  baths: number;
+  status: "active" | "coming_soon" | "pending";
+  listedDate?: string;
+  expectedDate?: string;
+  daysOnMarket: number;
+  // Calculated
+  demolitionCost: number;
+  buildCost: number;
+  holdingCosts: number;
+  expectedSale: number;
+  sellingCosts: number;
+  totalInvestment: number;
+  profit: number;
+  roi: number;
+  newConstructionPricePerSqft: number;
+}
+
 export interface MarketData {
   neighborhoods: NeighborhoodData[];
   materials: MaterialIndex[];
   mortgageRates: MortgageRate[];
   materialCostMultiplier: number;
+  listings: PropertyListing[];
   updatedAt: string;
 }
 

@@ -8,7 +8,7 @@ const NOVA_ZIPS = new Set(
 
 export async function GET() {
   try {
-    const res = await fetch(ZILLOW_ZHVI_URL, { next: { revalidate: 86400 } });
+    const res = await fetch(ZILLOW_ZHVI_URL, { cache: "no-store" });
     const csv = await res.text();
 
     const lines = csv.split("\n");

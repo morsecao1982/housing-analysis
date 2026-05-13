@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { ProfitInputs } from "@/types/housing";
-import { calculateProfit, formatCurrency, formatPercent } from "@/lib/calculations";
+import { calculateProfit, formatCurrency } from "@/lib/calculations";
 import { BUILD_COST_RANGES } from "@/lib/constants";
+import { roiColor } from "./ProfitBadge";
 
 interface Props {
   neighborhoods: { name: string; medianHomeValue: number }[];
@@ -13,23 +14,19 @@ interface Props {
 
 const DEFAULT_INPUTS: ProfitInputs = {
   neighborhood: "McLean",
-  lotPrice: 800000,
-  houseSqft: 4000,
+  lotPrice: 1100000,
+  houseSqft: 4500,
   quality: "premium",
   timelineMonths: 18,
   downPaymentPercent: 25,
   loanInterestRate: 7.5,
 };
 
-function CostRow({ label, value, highlight = false, sub = false }: {
-  label: string; value: number; highlight?: boolean; sub?: boolean;
-}) {
+function Row({ label, value, sub, total }: { label: string; value: number; sub?: boolean; total?: boolean }) {
   return (
-    <div className={`flex justify-between py-1.5 ${sub ? "pl-4 text-gray-400" : ""} ${highlight ? "border-t border-white/10 mt-1 pt-2.5 text-white font-bold" : ""}`}>
-      <span className={sub ? "text-xs" : "text-sm"}>{label}</span>
-      <span className={`tabular-nums ${sub ? "text-xs" : "text-sm"} ${highlight ? "text-white" : "text-gray-300"}`}>
-        {formatCurrency(value)}
-      </span>
+    <div className={`flex justify-between py-1.5 ${sub ? "pl-4" : ""} ${total ? "border-t border-white/10 mt-1 pt-2" : ""}`}>
+      <span className={`text-sm ${sub ? "text-slate-500 text-xs" : total ? "text-white font-semibold" : "text-slate-400"}`}>{label}</span>
+      <span className={`tabular-nums ${sub ? "text-slate-400 text-xs" : total ? "text-white font-bold" : "text-slate-200 text-sm"}`}>{formatCurrency(value)}</span>
     </div>
   );
 }
@@ -41,87 +38,65 @@ export default function ProfitCalculator({ neighborhoods, materialMultiplier, de
     neighborhood: neighborhoods[0]?.name ?? "McLean",
   });
 
-  const neighborhood = neighborhoods.find((n) => n.name === inputs.neighborhood);
-  const medianPricePerSqft = neighborhood ? neighborhood.medianHomeValue / 2500 : 500;
+  const hood = neighborhoods.find((n) => n.name === inputs.neighborhood);
+  const medianPricePerSqft = hood ? hood.medianHomeValue / 2500 : 500;
   const result = calculateProfit(inputs, medianPricePerSqft, materialMultiplier);
+  const c = roiColor(result.roi);
 
-  const isProfit = result.estimatedProfit > 0;
-
-  function update<K extends keyof ProfitInputs>(key: K, value: ProfitInputs[K]) {
-    setInputs((prev) => ({ ...prev, [key]: value }));
+  function set<K extends keyof ProfitInputs>(key: K, value: ProfitInputs[K]) {
+    setInputs((p) => ({ ...p, [key]: value }));
   }
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-white/10 p-6">
-      <h2 className="text-white font-bold text-xl mb-1">Profit Calculator</h2>
-      <p className="text-gray-500 text-sm mb-6">
-        Build cost auto-adjusted for current material prices and DC metro labor premium
-      </p>
+    <div className="bg-[#0D1825] rounded-2xl border border-white/5 p-6">
+      <div className="mb-6">
+        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Build Analysis</div>
+        <div className="text-white font-bold text-lg">Profit Calculator</div>
+        <div className="text-slate-500 text-xs mt-0.5">Costs auto-adjusted for BLS material index · DC Metro CCI 1.08×</div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Inputs */}
         <div className="space-y-4">
           <div>
-            <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-              Target Neighborhood
-            </label>
+            <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">Neighborhood</label>
             <select
               value={inputs.neighborhood}
-              onChange={(e) => update("neighborhood", e.target.value)}
-              className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+              onChange={(e) => set("neighborhood", e.target.value)}
+              className="w-full bg-[#162535] border border-white/5 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40"
             >
-              {neighborhoods.map((n) => (
-                <option key={n.name} value={n.name}>{n.name}</option>
-              ))}
+              {neighborhoods.map((n) => <option key={n.name} value={n.name}>{n.name}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-              Lot Purchase Price
-            </label>
+            <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">Lot / Property Purchase Price</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-              <input
-                type="number"
-                value={inputs.lotPrice}
-                onChange={(e) => update("lotPrice", Number(e.target.value))}
-                className="w-full bg-gray-800 border border-white/10 rounded-xl pl-7 pr-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
-              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+              <input type="number" value={inputs.lotPrice} onChange={(e) => set("lotPrice", Number(e.target.value))}
+                className="w-full bg-[#162535] border border-white/5 rounded-xl pl-7 pr-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40" />
             </div>
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-              House Size (sqft)
-            </label>
-            <input
-              type="number"
-              value={inputs.houseSqft}
-              onChange={(e) => update("houseSqft", Number(e.target.value))}
-              className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
-            />
+            <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">New Build Size (sqft)</label>
+            <input type="number" value={inputs.houseSqft} onChange={(e) => set("houseSqft", Number(e.target.value))}
+              className="w-full bg-[#162535] border border-white/5 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40" />
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-              Construction Quality
-            </label>
+            <label className="block text-xs text-slate-500 uppercase tracking-wider mb-2">Construction Quality</label>
             <div className="grid grid-cols-3 gap-2">
               {(["standard", "premium", "luxury"] as const).map((q) => (
-                <button
-                  key={q}
-                  onClick={() => update("quality", q)}
-                  className={`py-2 rounded-xl text-xs font-medium border transition-colors ${
+                <button key={q} onClick={() => set("quality", q)}
+                  className={`py-2.5 rounded-xl text-xs font-semibold border transition-all ${
                     inputs.quality === q
-                      ? "bg-blue-500 border-blue-500 text-white"
-                      : "bg-gray-800 border-white/10 text-gray-400 hover:border-white/20"
+                      ? "bg-amber-400/15 border-amber-400/40 text-amber-400"
+                      : "bg-[#162535] border-white/5 text-slate-400 hover:border-white/10"
                   }`}
                 >
                   <div>{BUILD_COST_RANGES[q].label}</div>
-                  <div className="text-gray-400 font-normal text-xs mt-0.5">
-                    ${BUILD_COST_RANGES[q].min}–{BUILD_COST_RANGES[q].max}/sqft
-                  </div>
+                  <div className="opacity-60 font-normal mt-0.5">${BUILD_COST_RANGES[q].min}–{BUILD_COST_RANGES[q].max}/sf</div>
                 </button>
               ))}
             </div>
@@ -129,86 +104,63 @@ export default function ProfitCalculator({ neighborhoods, materialMultiplier, de
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-                Timeline (months)
-              </label>
-              <input
-                type="number"
-                value={inputs.timelineMonths}
-                onChange={(e) => update("timelineMonths", Number(e.target.value))}
-                className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
-              />
+              <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">Timeline (months)</label>
+              <input type="number" value={inputs.timelineMonths} onChange={(e) => set("timelineMonths", Number(e.target.value))}
+                className="w-full bg-[#162535] border border-white/5 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40" />
             </div>
             <div>
-              <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-                Loan Rate (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={inputs.loanInterestRate}
-                onChange={(e) => update("loanInterestRate", Number(e.target.value))}
-                className="w-full bg-gray-800 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
-              />
+              <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">Loan Rate (%)</label>
+              <input type="number" step="0.1" value={inputs.loanInterestRate} onChange={(e) => set("loanInterestRate", Number(e.target.value))}
+                className="w-full bg-[#162535] border border-white/5 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40" />
             </div>
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block mb-1.5">
-              Down Payment: {inputs.downPaymentPercent}%
-            </label>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              value={inputs.downPaymentPercent}
-              onChange={(e) => update("downPaymentPercent", Number(e.target.value))}
-              className="w-full accent-blue-500"
-            />
+            <label className="block text-xs text-slate-500 uppercase tracking-wider mb-1.5">Down Payment: {inputs.downPaymentPercent}%</label>
+            <input type="range" min={10} max={100} value={inputs.downPaymentPercent}
+              onChange={(e) => set("downPaymentPercent", Number(e.target.value))}
+              className="w-full accent-amber-400" />
           </div>
         </div>
 
         {/* Results */}
         <div>
-          {/* Summary */}
-          <div className={`rounded-2xl p-5 mb-4 border ${
-            isProfit
-              ? "bg-green-500/10 border-green-500/30"
-              : "bg-red-500/10 border-red-500/30"
-          }`}>
-            <div className="text-gray-400 text-sm mb-1">Estimated Profit</div>
-            <div className={`text-4xl font-bold mb-1 ${isProfit ? "text-green-400" : "text-red-400"}`}>
-              {formatCurrency(result.estimatedProfit)}
+          {/* Summary card */}
+          <div className={`rounded-2xl border p-5 mb-4 ${c.bg} ${c.border}`}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-wider">{c.label}</div>
+                <div className={`text-4xl font-bold mt-1 ${c.text}`}>
+                  {result.estimatedProfit >= 0 ? "+" : ""}{formatCurrency(result.estimatedProfit)}
+                </div>
+              </div>
+              <div className={`text-right px-3 py-2 rounded-xl ${c.bg} border ${c.border}`}>
+                <div className={`text-2xl font-bold ${c.text}`}>{result.roi.toFixed(1)}%</div>
+                <div className="text-xs text-slate-500">ROI</div>
+              </div>
             </div>
-            <div className="flex gap-4 text-sm">
-              <span className={isProfit ? "text-green-400" : "text-red-400"}>
-                ROI {result.roi.toFixed(1)}%
-              </span>
-              <span className="text-gray-400">
-                Break-even: {formatCurrency(result.breakEvenPrice)}
-              </span>
-            </div>
-            <div className="text-gray-400 text-xs mt-1">
-              Expected sale: {formatCurrency(result.expectedSalePrice)} ·{" "}
-              All-in cost/sqft: {formatCurrency(result.costPerSqft)}/sqft
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><span className="text-slate-500">Expected Sale</span><div className="text-slate-200 font-medium tabular-nums">{formatCurrency(result.expectedSalePrice)}</div></div>
+              <div><span className="text-slate-500">Break-even</span><div className="text-slate-200 font-medium tabular-nums">{formatCurrency(result.breakEvenPrice)}</div></div>
+              <div><span className="text-slate-500">All-in/sqft</span><div className="text-slate-200 font-medium tabular-nums">{formatCurrency(result.costPerSqft)}/sf</div></div>
+              <div><span className="text-slate-500">Sale/sqft</span><div className="text-slate-200 font-medium tabular-nums">{formatCurrency(result.expectedSalePrice / inputs.houseSqft)}/sf</div></div>
             </div>
           </div>
 
-          {/* Cost Breakdown */}
-          <div className="bg-gray-800/50 rounded-xl p-4">
-            <div className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">Cost Breakdown</div>
-            <CostRow label="Lot Purchase" value={result.lotCost} />
-            <CostRow label="Construction (base)" value={result.baseBuildCost} sub />
-            <CostRow label={`Material adjustment (×${materialMultiplier.toFixed(3)})`} value={result.adjustedBuildCost - result.baseBuildCost} sub />
-            <CostRow label="DC Metro premium (×1.08)" value={result.adjustedBuildCost - result.baseBuildCost * 1.0} sub />
-            <CostRow label="Architect / Design (10%)" value={result.architectFees} sub />
-            <CostRow label="Permits (Fairfax County)" value={result.permitFees} sub />
-            <CostRow label="Site Prep & Utilities" value={result.sitePrepCost} sub />
-            <CostRow label="Landscaping" value={result.landscapingCost} sub />
-            <CostRow label="Contingency (10%)" value={result.contingency} sub />
-            <CostRow label="Holding Costs" value={result.holdingCosts} sub />
-            <CostRow label="Selling Costs (5.5% + 1.5%)" value={result.sellingCosts} sub />
-            <CostRow label="Total Investment" value={result.totalInvestment} highlight />
+          {/* Breakdown */}
+          <div className="bg-[#121E2E] rounded-xl border border-white/5 px-4 py-3">
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-2">Cost Breakdown</div>
+            <Row label="Lot Purchase" value={result.lotCost} />
+            <Row label="Construction (base)" value={result.baseBuildCost} sub />
+            <Row label={`Material adj. (×${materialMultiplier.toFixed(3)})`} value={result.adjustedBuildCost - result.baseBuildCost} sub />
+            <Row label="Architect / Design" value={result.architectFees} sub />
+            <Row label="Permits (Fairfax Co.)" value={result.permitFees} sub />
+            <Row label="Site Prep & Utilities" value={result.sitePrepCost} sub />
+            <Row label="Landscaping" value={result.landscapingCost} sub />
+            <Row label="Contingency (10%)" value={result.contingency} sub />
+            <Row label="Holding Costs" value={result.holdingCosts} sub />
+            <Row label="Selling (5.5% + 1.5%)" value={result.sellingCosts} sub />
+            <Row label="Total Investment" value={result.totalInvestment} total />
           </div>
         </div>
       </div>

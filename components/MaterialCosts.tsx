@@ -1,6 +1,6 @@
 "use client";
 
-import { ResponsiveContainer, LineChart, Line, Tooltip, YAxis, XAxis } from "recharts";
+import { ResponsiveContainer, LineChart, Line, Tooltip, YAxis } from "recharts";
 import { MaterialIndex } from "@/types/housing";
 
 interface Props {
@@ -9,70 +9,59 @@ interface Props {
 }
 
 export default function MaterialCosts({ materials, multiplier }: Props) {
-  const multiplierPercent = ((multiplier - 1) * 100).toFixed(1);
+  const pct = ((multiplier - 1) * 100).toFixed(1);
   const isUp = multiplier >= 1;
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-white/10 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-[#0D1825] rounded-2xl border border-white/5 p-6 h-full">
+      <div className="flex items-start justify-between mb-5">
         <div>
-          <h2 className="text-white font-bold text-lg">Construction Material Costs</h2>
-          <p className="text-gray-500 text-xs mt-0.5">BLS Producer Price Index · Updated monthly</p>
+          <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Material Cost Index</div>
+          <div className="text-white font-bold text-lg">Construction Materials</div>
+          <div className="text-slate-600 text-xs mt-0.5">BLS Producer Price Index · Monthly</div>
         </div>
-        <div className="text-right">
-          <div className={`text-2xl font-bold ${isUp ? "text-red-400" : "text-green-400"}`}>
-            {isUp ? "+" : ""}{multiplierPercent}%
-          </div>
-          <div className="text-xs text-gray-500">vs 2-year baseline</div>
+        <div className={`text-right px-3 py-2 rounded-xl border ${isUp ? "bg-red-500/10 border-red-500/20" : "bg-green-500/10 border-green-500/20"}`}>
+          <div className={`text-xl font-bold ${isUp ? "text-red-400" : "text-green-400"}`}>{isUp ? "+" : ""}{pct}%</div>
+          <div className="text-xs text-slate-500">vs baseline</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="space-y-3">
         {materials.map((m) => {
-          const isMatUp = m.changePercent >= 0;
+          const up = m.changePercent >= 0;
           return (
-            <div key={m.seriesId} className="bg-gray-800/60 rounded-xl p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-gray-300 text-xs font-medium">{m.name}</span>
-                <span className={`text-xs font-bold ${isMatUp ? "text-red-400" : "text-green-400"}`}>
-                  {isMatUp ? "+" : ""}{m.changePercent.toFixed(1)}%
-                </span>
-              </div>
-              <div className="text-gray-500 text-xs mb-2">
-                Index: {m.currentValue.toFixed(1)} · Weight: {(m.weight * 100).toFixed(0)}%
-              </div>
-              {m.history.length > 1 && (
-                <div className="h-10">
+            <div key={m.seriesId} className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-slate-300 text-xs font-medium truncate">{m.name}</span>
+                  <span className={`text-xs font-bold ml-2 flex-shrink-0 ${up ? "text-red-400" : "text-green-400"}`}>
+                    {up ? "+" : ""}{m.changePercent.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="h-6">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={m.history}>
                       <YAxis domain={["auto", "auto"]} hide />
-                      <XAxis dataKey="date" hide />
                       <Tooltip
-                        contentStyle={{ background: "#111827", border: "none", borderRadius: "6px", fontSize: "10px" }}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      formatter={(v: any) => [Number(v).toFixed(1), "Index"]}
-                        labelFormatter={(l) => l}
+                        contentStyle={{ background: "#0A1520", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", fontSize: "10px" }}
+                        formatter={(v: unknown) => [Number(v).toFixed(1), "Index"]}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke={isMatUp ? "#f87171" : "#4ade80"}
-                        strokeWidth={1.5}
-                        dot={false}
-                      />
+                      <Line type="monotone" dataKey="value" stroke={up ? "#f87171" : "#4ade80"} strokeWidth={1.5} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-              )}
+              </div>
+              <div className="text-right w-16 flex-shrink-0">
+                <div className="text-slate-400 text-xs tabular-nums">{m.currentValue.toFixed(0)}</div>
+                <div className="text-slate-600 text-xs">{(m.weight * 100).toFixed(0)}% wt</div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      <div className={`mt-4 rounded-xl px-4 py-3 text-sm ${isUp ? "bg-red-500/10 border border-red-500/20 text-red-300" : "bg-green-500/10 border border-green-500/20 text-green-300"}`}>
-        <strong>Impact on your build cost:</strong> Materials are{" "}
-        {isUp ? `${multiplierPercent}% more expensive` : `${Math.abs(parseFloat(multiplierPercent))}% cheaper`} than the 2-year baseline.
-        The profit calculator automatically applies this adjustment.
+      <div className={`mt-4 rounded-xl px-3 py-2.5 text-xs border ${isUp ? "bg-red-500/5 border-red-500/15 text-red-300" : "bg-green-500/5 border-green-500/15 text-green-300"}`}>
+        Materials are <strong>{isUp ? `${pct}% above` : `${Math.abs(parseFloat(pct))}% below`}</strong> the 2-year baseline — applied to all profit calculations.
       </div>
     </div>
   );
