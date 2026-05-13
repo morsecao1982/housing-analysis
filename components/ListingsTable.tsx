@@ -69,6 +69,8 @@ export default function ListingsTable({ listings, dataNote }: Props) {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterNeighborhood, setFilterNeighborhood] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const neighborhoods = useMemo(
     () => ["all", ...Array.from(new Set(listings.map((l) => l.neighborhood)))],
@@ -90,9 +92,18 @@ export default function ListingsTable({ listings, dataNote }: Props) {
     return filtered;
   }, [listings, sortKey, sortDir, filterStatus, filterType, filterNeighborhood]);
 
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const paginated  = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     else { setSortKey(key); setSortDir("desc"); }
+    setPage(1);
+  }
+
+  function changeFilter<T>(setter: (v: T) => void, value: T) {
+    setter(value);
+    setPage(1);
   }
 
   const activeCount     = listings.filter((l) => l.status === "active").length;
@@ -135,7 +146,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           {(["all", "active", "coming_soon"] as FilterStatus[]).map((s) => (
-            <button key={s} onClick={() => setFilterStatus(s)}
+            <button key={s} onClick={() => changeFilter(setFilterStatus, s)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-slate-200 last:border-0 ${
                 filterStatus === s ? "bg-amber-50 text-amber-700" : "text-slate-500 hover:text-slate-700 bg-white"
               }`}
@@ -146,7 +157,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
         </div>
         <div className="flex rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           {(["all", "teardown", "lot_only"] as FilterType[]).map((t) => (
-            <button key={t} onClick={() => setFilterType(t)}
+            <button key={t} onClick={() => changeFilter(setFilterType, t)}
               className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-slate-200 last:border-0 ${
                 filterType === t ? "bg-purple-50 text-purple-700" : "text-slate-500 hover:text-slate-700 bg-white"
               }`}
@@ -157,7 +168,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
         </div>
         <select
           value={filterNeighborhood}
-          onChange={(e) => setFilterNeighborhood(e.target.value)}
+          onChange={(e) => changeFilter(setFilterNeighborhood, e.target.value)}
           className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600 shadow-sm focus:outline-none focus:border-amber-400"
         >
           {neighborhoods.map((n) => (
@@ -186,7 +197,7 @@ export default function ListingsTable({ listings, dataNote }: Props) {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((l, i) => {
+            {paginated.map((l, i) => {
               const c = roiColor(l.roi);
               const isExpanded = expanded === l.id;
               return (
@@ -354,6 +365,44 @@ export default function ListingsTable({ listings, dataNote }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 px-1">
+          <span className="text-xs text-slate-400">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)} of {sorted.length} listings
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-8 h-8 text-xs rounded-lg border transition-colors ${
+                  p === page
+                    ? "bg-amber-50 border-amber-400 text-amber-700 font-bold"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
 
       <p className="text-slate-400 text-xs mt-3 text-center">
         ⚠ {dataNote} · Click any row to expand cost breakdown
