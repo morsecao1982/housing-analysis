@@ -8,6 +8,7 @@ import NewConstructionTab from "./NewConstructionTab";
 interface Props {
   neighborhoods: NeighborhoodData[];
   materialMultiplier: number;
+  newConstructionPrices: Record<string, number>;
 }
 
 const TABS = [
@@ -15,7 +16,7 @@ const TABS = [
   { id: "new_construction", label: "New Construction", desc: "Custom build pricing · Cost vs. sale analysis · DC Metro adjusted" },
 ];
 
-export default function MarketTabs({ neighborhoods, materialMultiplier }: Props) {
+export default function MarketTabs({ neighborhoods, materialMultiplier, newConstructionPrices }: Props) {
   const [active, setActive] = useState("overall");
   const tab = TABS.find((t) => t.id === active)!;
 
@@ -47,7 +48,7 @@ export default function MarketTabs({ neighborhoods, materialMultiplier }: Props)
       {/* Tab content */}
       {active === "overall" && <NeighborhoodGrid neighborhoods={neighborhoods} />}
       {active === "new_construction" && (
-        <NewConstructionTab neighborhoods={neighborhoods} materialMultiplier={materialMultiplier} />
+        <NewConstructionTab neighborhoods={neighborhoods} materialMultiplier={materialMultiplier} newConstructionPrices={newConstructionPrices} />
       )}
     </div>
   );

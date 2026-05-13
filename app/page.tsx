@@ -7,7 +7,7 @@ import MarketTabs from "@/components/MarketTabs";
 import { fetchMarketData } from "@/lib/fetchMarketData";
 import { fetchMaterials } from "@/lib/fetchMaterials";
 import { fetchMortgageRates } from "@/lib/fetchMortgageRates";
-import { fetchListings } from "@/lib/fetchListings";
+import { fetchListings, deriveNewConstructionPrices } from "@/lib/fetchListings";
 
 async function fetchAll() {
   const [neighborhoods, matsResult, rates] = await Promise.all([
@@ -16,7 +16,9 @@ async function fetchAll() {
     fetchMortgageRates().catch((): MortgageRate[] => []),
   ]);
 
-  const { listings, dataNote } = fetchListings(matsResult.materialCostMultiplier);
+  // Derive sale price estimates from live Zillow top-tier ZHVI ÷ typical new build sqft
+  const newConstructionPrices = deriveNewConstructionPrices(neighborhoods);
+  const { listings, dataNote } = fetchListings(matsResult.materialCostMultiplier, newConstructionPrices);
 
   return {
     neighborhoods,
@@ -25,11 +27,12 @@ async function fetchAll() {
     mortgageRates:           rates,
     listings,
     dataNote,
+    newConstructionPrices,
   };
 }
 
 export default async function Home() {
-  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote } = await fetchAll();
+  const { neighborhoods, materials, materialCostMultiplier, mortgageRates, listings, dataNote, newConstructionPrices } = await fetchAll();
 
   const defaultRate     = mortgageRates.find((r) => r.product.includes("30 Year Fixed"))?.rate ?? 7.0;
   const profitableCount = listings.filter((l) => l.roi > 0).length;
@@ -133,7 +136,7 @@ export default async function Home() {
               <p className="text-slate-400 text-xs mt-0.5">Overall market trends · New construction pricing · Source: Zillow Research &amp; BLS</p>
             </div>
           </div>
-          <MarketTabs neighborhoods={neighborhoods} materialMultiplier={materialCostMultiplier} />
+          <MarketTabs neighborhoods={neighborhoods} materialMultiplier={materialCostMultiplier} newConstructionPrices={newConstructionPrices} />
         </section>
 
         {/* Profit Calculator */}

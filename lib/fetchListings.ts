@@ -1,8 +1,26 @@
 import { PropertyListing } from "@/types/housing";
+import { TYPICAL_NEW_BUILD_SQFT } from "./constants";
 
-const NEW_CONSTRUCTION_PRICE: Record<string, number> = {
-  McLean: 920, "Great Falls": 820, Vienna: 700, "Falls Church": 710, Tysons: 780,
+// Fallback hardcoded prices (used only when market data unavailable)
+const FALLBACK_PRICE: Record<string, number> = {
+  McLean: 550, "Great Falls": 480, Vienna: 420, "Falls Church": 420, Tysons: 460,
 };
+
+export function deriveNewConstructionPrices(
+  neighborhoods: { name: string; newConstructionValue: number }[]
+): Record<string, number> {
+  const prices: Record<string, number> = {};
+  for (const n of neighborhoods) {
+    const typicalSqft = TYPICAL_NEW_BUILD_SQFT[n.name];
+    if (n.newConstructionValue > 0 && typicalSqft > 0) {
+      // Top-tier ZHVI ÷ typical new build sqft = implied $/sqft for premium new builds
+      prices[n.name] = Math.round(n.newConstructionValue / typicalSqft);
+    } else {
+      prices[n.name] = FALLBACK_PRICE[n.name] ?? 450;
+    }
+  }
+  return prices;
+}
 
 const BUILD_COST_PER_SQFT = 420;
 const DEMO_COST_PER_SQFT  = 10;
@@ -63,27 +81,36 @@ const RAW_LISTINGS: RawListing[] = [
   { id: "tys-l01", address: "8344 Leesburg Pike",      neighborhood: "Tysons",       zip: "22182", yearBuilt: 0,    listPrice:  720000, lotSqft: 12500, existingSqft: 0,    newBuildSqft: 4200, beds: 0, baths: 0,   propertyType: "lot_only",  status: "active",      listedDate: "2026-04-14", daysOnMarket: 28 },
 ];
 
-function calcProfit(listing: RawListing, materialMultiplier = 1.0): PropertyListing {
-  const buildCost      = listing.newBuildSqft * BUILD_COST_PER_SQFT * materialMultiplier;
-  // Lot-only listings have no demolition cost
-  const demolitionCost = listing.propertyType === "lot_only" ? 0 : listing.existingSqft * DEMO_COST_PER_SQFT;
-  const loanBase       = (listing.listPrice + buildCost + demolitionCost) * (1 - DOWN_PAYMENT);
-  const holdingCosts   = loanBase * (LOAN_RATE / 12) * TIMELINE_MONTHS;
-  const expectedSale   = listing.newBuildSqft * (NEW_CONSTRUCTION_PRICE[listing.neighborhood] ?? 700);
-  const sellingCosts   = expectedSale * SELLING_COST_RATE;
-  const totalInvestment = listing.listPrice + buildCost + demolitionCost + holdingCosts + sellingCosts;
-  const profit         = expectedSale - totalInvestment;
-  const roi            = (profit / (totalInvestment - sellingCosts)) * 100;
+function calcProfit(
+  listing: RawListing,
+  materialMultiplier: number,
+  priceMap: Record<string, number>
+): PropertyListing {
+  const salePricePerSqft = priceMap[listing.neighborhood] ?? FALLBACK_PRICE[listing.neighborhood] ?? 450;
+  const buildCost        = listing.newBuildSqft * BUILD_COST_PER_SQFT * materialMultiplier;
+  const demolitionCost   = listing.propertyType === "lot_only" ? 0 : listing.existingSqft * DEMO_COST_PER_SQFT;
+  const loanBase         = (listing.listPrice + buildCost + demolitionCost) * (1 - DOWN_PAYMENT);
+  const holdingCosts     = loanBase * (LOAN_RATE / 12) * TIMELINE_MONTHS;
+  const expectedSale     = listing.newBuildSqft * salePricePerSqft;
+  const sellingCosts     = expectedSale * SELLING_COST_RATE;
+  const totalInvestment  = listing.listPrice + buildCost + demolitionCost + holdingCosts + sellingCosts;
+  const profit           = expectedSale - totalInvestment;
+  const roi              = (profit / (totalInvestment - sellingCosts)) * 100;
   return {
     ...listing,
     demolitionCost, buildCost, holdingCosts, expectedSale,
     sellingCosts, totalInvestment, profit, roi,
-    newConstructionPricePerSqft: NEW_CONSTRUCTION_PRICE[listing.neighborhood] ?? 700,
+    newConstructionPricePerSqft: salePricePerSqft,
   };
 }
 
-export function fetchListings(materialMultiplier = 1.0): { listings: PropertyListing[]; dataNote: string } {
-  const listings = RAW_LISTINGS.map((l) => calcProfit(l, materialMultiplier));
+export function fetchListings(
+  materialMultiplier = 1.0,
+  newConstructionPrices: Record<string, number> = {}
+): { listings: PropertyListing[]; dataNote: string } {
+  // Merge live market prices with fallback
+  const priceMap = { ...FALLBACK_PRICE, ...newConstructionPrices };
+  const listings = RAW_LISTINGS.map((l) => calcProfit(l, materialMultiplier, priceMap));
   listings.sort((a, b) => b.roi - a.roi);
   return {
     listings,

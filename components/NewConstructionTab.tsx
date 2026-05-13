@@ -16,6 +16,7 @@ import {
 interface Props {
   neighborhoods: NeighborhoodData[];
   materialMultiplier: number;
+  newConstructionPrices: Record<string, number>;
 }
 
 const ALL_IN_BUILD_COST_SQFT = 420; // premium all-in per sqft
@@ -28,9 +29,10 @@ function pct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 }
 
-export default function NewConstructionTab({ neighborhoods, materialMultiplier }: Props) {
+export default function NewConstructionTab({ neighborhoods, materialMultiplier, newConstructionPrices }: Props) {
   const rows = neighborhoods.map((n) => {
-    const newSalePriceSqft = NEW_CONSTRUCTION_PRICE_SQFT[n.name] ?? 700;
+    // Use live Zillow-derived price if available, fall back to constants
+    const newSalePriceSqft = newConstructionPrices[n.name] ?? NEW_CONSTRUCTION_PRICE_SQFT[n.name] ?? 450;
     const newBuildSqft     = TYPICAL_NEW_BUILD_SQFT[n.name] ?? 4000;
     const existingSqft     = TYPICAL_EXISTING_SQFT[n.name] ?? 2000;
     const buildCost        = newBuildSqft * ALL_IN_BUILD_COST_SQFT * materialMultiplier * DC_METRO_CCI;
@@ -90,9 +92,10 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
           <div className="text-2xl font-bold text-blue-600">
             <InfoTooltip
-              content={`Hardcoded estimate based on 2026 NoVA custom build sales research.\n\nPer neighborhood:\n• McLean: $920/sf\n• Great Falls: $820/sf\n• Tysons: $780/sf\n• Falls Church: $710/sf\n• Vienna: $700/sf\n\nAverage: $${Math.round(Object.values(NEW_CONSTRUCTION_PRICE_SQFT).reduce((a, b) => a + b, 0) / Object.values(NEW_CONSTRUCTION_PRICE_SQFT).length)}/sf\n\nTo update: lib/constants.ts → NEW_CONSTRUCTION_PRICE_SQFT`}
+              isLive
+              content={`Derived from live Zillow top-tier ZHVI data.\n\nFormula: Top-tier home value ÷ typical new build sqft\n\nPer neighborhood:\n${rows.map(r => `• ${r.name}: $${r.newSalePriceSqft}/sf`).join('\n')}\n\nSource: Zillow top-tier ZHVI (upper 33% of homes by value) ÷ typical new build sqft for each area.\n\nUpdates daily with Zillow data.`}
             >
-              ${Math.round(Object.values(NEW_CONSTRUCTION_PRICE_SQFT).reduce((a, b) => a + b, 0) / Object.values(NEW_CONSTRUCTION_PRICE_SQFT).length)}/sf
+              ${Math.round(rows.reduce((s, r) => s + r.newSalePriceSqft, 0) / rows.length)}/sf
             </InfoTooltip>
           </div>
           <div className="text-slate-500 text-xs mt-1">Avg New Build Sale/sqft</div>
@@ -323,7 +326,8 @@ export default function NewConstructionTab({ neighborhoods, materialMultiplier }
                     <td className="px-4 py-3 text-slate-700 text-sm font-medium tabular-nums">{fmt(r.medianValue)}</td>
                     <td className="px-4 py-3 text-slate-700 text-sm tabular-nums">
                       <InfoTooltip
-                        content={`Hardcoded estimate for ${r.name}.\n\nBased on 2026 NoVA new construction sales data for custom-built homes in this neighborhood.\n\nTypical range: $${r.newSalePriceSqft - 80}–$${r.newSalePriceSqft + 80}/sf depending on finishes, lot size, and exact location.\n\nTo update: lib/constants.ts → NEW_CONSTRUCTION_PRICE_SQFT`}
+                        isLive
+                        content={`Derived from live Zillow data for ${r.name}.\n\nFormula:\nTop-tier ZHVI ($${Math.round((neighborhoods.find(n=>n.name===r.name)?.newConstructionValue??0)/1000)}K) ÷ ${(TYPICAL_NEW_BUILD_SQFT[r.name]??4000).toLocaleString()} sqft = $${r.newSalePriceSqft}/sf\n\nTop-tier ZHVI = Zillow's estimated value for the upper 33% of homes in this zip code — the closest public proxy for new construction pricing.\n\nUpdates daily with Zillow data.`}
                         width="w-72"
                       >
                         ${r.newSalePriceSqft}/sf
