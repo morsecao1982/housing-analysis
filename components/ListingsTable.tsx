@@ -229,16 +229,18 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                         >
                           Zillow ↗
                         </a>
-                        <a
-                          href={`https://www.redfin.com/stingray/do/location-search?location=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          title={`Search ${l.address} on Redfin`}
-                          className="text-xs px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 font-medium transition-colors"
-                        >
-                          Redfin ↗
-                        </a>
+                        {l.detailUrl && (
+                          <a
+                            href={l.detailUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title={`View ${l.address} on Realtor.com`}
+                            className="text-xs px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 font-medium transition-colors"
+                          >
+                            Realtor ↗
+                          </a>
+                        )}
                         <a
                           href={`https://maps.google.com/?q=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
                           target="_blank"

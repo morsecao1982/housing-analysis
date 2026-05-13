@@ -2,60 +2,55 @@ import { PropertyListing } from "@/types/housing";
 import { TYPICAL_NEW_BUILD_SQFT } from "./constants";
 
 const KEY = process.env.RAPIDAPI_KEY ?? "";
+const HOST = "us-real-estate-listings.p.rapidapi.com";
 
 const SEARCH_LOCATIONS = [
-  { query: "McLean VA",       neighborhood: "McLean"       },
-  { query: "Great Falls VA",  neighborhood: "Great Falls"  },
-  { query: "Vienna VA",       neighborhood: "Vienna"       },
-  { query: "Falls Church VA", neighborhood: "Falls Church" },
-  { query: "Tysons VA",       neighborhood: "Tysons"       },
+  { query: "McLean,VA",       neighborhood: "McLean"       },
+  { query: "Great Falls,VA",  neighborhood: "Great Falls"  },
+  { query: "Vienna,VA",       neighborhood: "Vienna"       },
+  { query: "Falls Church,VA", neighborhood: "Falls Church" },
+  { query: "Tysons,VA",       neighborhood: "Tysons"       },
 ];
 
-interface ZillowSearchListing {
-  zpid: number;
-  detailUrl: string;
-  beds: number;
-  baths: number;
-  area: number;                    // living area sqft
-  isPaidBuilderNewConstruction: boolean;
-  hdpData: {
-    homeInfo: {
-      streetAddress: string;
-      zipcode: string;
-      price: number;
-      bathrooms: number;
-      bedrooms: number;
-      livingArea: number;
-      homeStatus: string;
-      daysOnZillow: number;
-      lotAreaValue: number;
-      lotAreaUnit: string;
-      comingSoonOnMarketDate?: number;
-      zestimate?: number;
+interface RawListing {
+  property_id: string;
+  listing_id: string;
+  status: string;
+  list_price: number;
+  list_date?: string;
+  href?: string;
+  flags?: { is_coming_soon?: boolean };
+  description: {
+    year_built?: number;
+    sqft?: number;
+    lot_sqft?: number;
+    beds?: number;
+    baths_consolidated?: string;
+    baths_full?: number;
+    baths_half?: number;
+    type?: string;
+  };
+  location: {
+    address: {
+      line?: string;
+      city?: string;
+      postal_code?: string;
+      state_code?: string;
     };
   };
 }
 
-async function searchListings(query: string): Promise<ZillowSearchListing[]> {
+async function fetchForLocation(query: string): Promise<RawListing[]> {
   const res = await fetch(
-    `https://real-estate-zillow-com.p.rapidapi.com/v1/search/sale?location_or_rid=${encodeURIComponent(query)}&property_types=house&page=1`,
+    `https://${HOST}/for-sale?location=${encodeURIComponent(query)}&limit=50&year_built_max=1970`,
     {
-      headers: {
-        "x-rapidapi-key":  KEY,
-        "x-rapidapi-host": "real-estate-zillow-com.p.rapidapi.com",
-      },
-      next: { revalidate: 604800 },
+      headers: { "x-rapidapi-key": KEY, "x-rapidapi-host": HOST },
+      next: { revalidate: 604800 }, // 7 days
     }
   );
   if (!res.ok) return [];
   const json = await res.json();
-  return json?.data?.listings ?? [];
-}
-
-function lotToSqft(value: number, unit: string): number {
-  if (!value || value <= 0) return 0;
-  if (unit === "acres") return Math.round(value * 43560);
-  return Math.round(value);
+  return json?.listings ?? [];
 }
 
 export async function fetchRealListings(
@@ -69,74 +64,76 @@ export async function fetchRealListings(
   const DOWN_PAYMENT        = 0.25;
   const SELLING_COST_RATE   = 0.065;
 
-  // Fetch all neighborhoods in parallel — only 5 API calls total
   const results = await Promise.allSettled(
     SEARCH_LOCATIONS.map((loc) =>
-      searchListings(loc.query).then((items) =>
+      fetchForLocation(loc.query).then((items) =>
         items.map((item) => ({ item, neighborhood: loc.neighborhood }))
       )
     )
   );
 
   const listings: PropertyListing[] = [];
+  const seen = new Set<string>();
 
   for (const result of results) {
     if (result.status !== "fulfilled") continue;
 
     for (const { item, neighborhood } of result.value) {
-      const h = item.hdpData?.homeInfo;
-      if (!h || !h.price || h.price <= 0) continue;
+      const id = item.property_id;
+      if (seen.has(id)) continue;
+      seen.add(id);
 
-      // Skip confirmed new builder construction
-      if (item.isPaidBuilderNewConstruction) continue;
+      const desc = item.description;
+      const addr = item.location?.address;
+      if (!item.list_price || item.list_price <= 0) continue;
 
-      const lot          = lotToSqft(h.lotAreaValue, h.lotAreaUnit);
+      const yearBuilt  = desc.year_built ?? 0;
+      const lot        = desc.lot_sqft ?? 0;
+      const livingArea = desc.sqft ?? 0;
+
       const typicalBuild = TYPICAL_NEW_BUILD_SQFT[neighborhood] ?? 4000;
       const newBuildSqft = lot > 0
         ? Math.min(Math.max(Math.round(lot * 0.3), 3000), typicalBuild)
         : typicalBuild;
 
       const propertyType: "teardown" | "lot_only" =
-        (!h.livingArea || h.livingArea < 200) ? "lot_only" : "teardown";
+        (!livingArea || livingArea < 200) ? "lot_only" : "teardown";
 
-      const isComing = h.homeStatus === "COMING_SOON" ||
-        (h.comingSoonOnMarketDate != null && h.comingSoonOnMarketDate > Date.now());
+      const isComing = item.status === "coming_soon" || item.flags?.is_coming_soon === true;
       const status: "active" | "coming_soon" = isComing ? "coming_soon" : "active";
-      const expectedDate = h.comingSoonOnMarketDate
-        ? new Date(h.comingSoonOnMarketDate).toISOString().split("T")[0]
-        : undefined;
+
+      const baths = parseFloat(desc.baths_consolidated ?? "0") ||
+        (desc.baths_full ?? 0) + (desc.baths_half ?? 0) * 0.5;
 
       const salePricePerSqft = newConstructionPrices[neighborhood] ?? 450;
       const buildCost        = newBuildSqft * BUILD_COST_PER_SQFT * materialMultiplier;
-      const demolitionCost   = propertyType === "lot_only" ? 0 : (h.livingArea ?? 0) * DEMO_COST_PER_SQFT;
-      const loanBase         = (h.price + buildCost + demolitionCost) * (1 - DOWN_PAYMENT);
+      const demolitionCost   = propertyType === "lot_only" ? 0 : livingArea * DEMO_COST_PER_SQFT;
+      const loanBase         = (item.list_price + buildCost + demolitionCost) * (1 - DOWN_PAYMENT);
       const holdingCosts     = loanBase * (LOAN_RATE / 12) * TIMELINE_MONTHS;
       const expectedSale     = newBuildSqft * salePricePerSqft;
       const sellingCosts     = expectedSale * SELLING_COST_RATE;
-      const totalInvestment  = h.price + buildCost + demolitionCost + holdingCosts + sellingCosts;
+      const totalInvestment  = item.list_price + buildCost + demolitionCost + holdingCosts + sellingCosts;
       const profit           = expectedSale - totalInvestment;
       const roi              = (profit / (totalInvestment - sellingCosts)) * 100;
 
-      const detailUrl = item.detailUrl.startsWith("http")
-        ? item.detailUrl
-        : `https://www.zillow.com${item.detailUrl}`;
-
       listings.push({
-        id:           `zpid-${item.zpid}`,
-        address:      h.streetAddress,
+        id:           `prop-${id}`,
+        address:      addr?.line ?? "Unknown",
         neighborhood,
-        zip:          h.zipcode,
-        yearBuilt:    0,           // not available from search API
-        listPrice:    h.price,
+        zip:          addr?.postal_code ?? "",
+        yearBuilt,
+        listPrice:    item.list_price,
         lotSqft:      lot,
-        existingSqft: h.livingArea ?? 0,
+        existingSqft: livingArea,
         newBuildSqft,
-        beds:         h.bedrooms ?? 0,
-        baths:        h.bathrooms ?? 0,
+        beds:         desc.beds ?? 0,
+        baths,
         propertyType,
         status,
-        expectedDate,
-        daysOnMarket: h.daysOnZillow ?? 0,
+        listedDate:   item.list_date,
+        daysOnMarket: item.list_date
+          ? Math.floor((Date.now() - new Date(item.list_date).getTime()) / 86400000)
+          : 0,
         demolitionCost,
         buildCost,
         holdingCosts,
@@ -146,7 +143,7 @@ export async function fetchRealListings(
         profit,
         roi,
         newConstructionPricePerSqft: salePricePerSqft,
-        detailUrl,
+        detailUrl: item.href,
       });
     }
   }
@@ -155,6 +152,6 @@ export async function fetchRealListings(
 
   return {
     listings,
-    dataNote: "Live Zillow data via RapidAPI · Year built unavailable from search API — click Zillow ↗ to verify · Updated daily",
+    dataNote: "Live Realtor.com data · Pre-1970 homes & lots · Updated weekly",
   };
 }
