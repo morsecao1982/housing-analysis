@@ -209,22 +209,34 @@ export default function ListingsTable({ listings, dataNote }: Props) {
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-slate-400 text-xs">{l.neighborhood} · ZIP {l.zip}</span>
                         <a
-                          href={`https://www.zillow.com/homes/${`${l.address} ${l.neighborhood} VA ${l.zip}`.replace(/\s+/g, "-")}_rb/`}
+                          href={`https://www.zillow.com/homes/for_sale/${l.zip}_rb/`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
+                          title={`Search active listings in ZIP ${l.zip} on Zillow`}
                           className="text-xs px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
                         >
                           Zillow ↗
                         </a>
                         <a
-                          href={`https://www.redfin.com/stingray/do/location-search?location=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
+                          href={`https://www.redfin.com/zipcode/${l.zip}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
+                          title={`Search active listings in ZIP ${l.zip} on Redfin`}
                           className="text-xs px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100 font-medium transition-colors"
                         >
                           Redfin ↗
+                        </a>
+                        <a
+                          href={`https://maps.google.com/?q=${encodeURIComponent(`${l.address}, ${l.neighborhood}, VA ${l.zip}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="View address on Google Maps"
+                          className="text-xs px-1.5 py-0.5 rounded bg-green-50 border border-green-200 text-green-600 hover:bg-green-100 font-medium transition-colors"
+                        >
+                          Map ↗
                         </a>
                       </div>
                     </td>
