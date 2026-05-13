@@ -75,7 +75,7 @@ export default function ProfitCalculator({ neighborhoods, materialMultiplier, de
             <label className="block text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1.5">Lot / Property Purchase Price</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-              <input type="number" value={inputs.lotPrice} onChange={(e) => set("lotPrice", Number(e.target.value))}
+              <input type="number" value={inputs.lotPrice} step={100000} onChange={(e) => set("lotPrice", Number(e.target.value))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-amber-400" />
             </div>
           </div>
